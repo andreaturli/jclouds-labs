@@ -20,15 +20,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache.jclouds.labs</groupId>
-    <artifactId>jclouds-labs</artifactId>
+    <groupId>org.apache.jclouds</groupId>
+    <artifactId>jclouds-project</artifactId>
     <version>2.0.0-SNAPSHOT</version>
+    <relativePath />
   </parent>
 
   <!-- TODO: when out of labs, switch to org.jclouds.provider -->
   <groupId>org.apache.jclouds.labs</groupId>
   <artifactId>cloudsigma2-lvs</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
   <name>jclouds CloudSigma v2 Las Vegas Provider</name>
   <description>ComputeService binding to the CloudSigma datacenter in SuperNAP Las Vegas</description>
   <packaging>bundle</packaging>
@@ -54,39 +54,39 @@
     <dependency>
       <groupId>org.apache.jclouds.labs</groupId>
       <artifactId>cloudsigma2</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds.labs</groupId>
       <artifactId>cloudsigma2</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds</groupId>
       <artifactId>jclouds-core</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds</groupId>
       <artifactId>jclouds-compute</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds.driver</groupId>
       <artifactId>jclouds-log4j</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds.driver</groupId>
       <artifactId>jclouds-sshj</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
