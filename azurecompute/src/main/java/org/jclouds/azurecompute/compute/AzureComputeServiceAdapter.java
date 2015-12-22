@@ -313,7 +313,6 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Deploym
 
    public Deployment internalDestroyNode(final String nodeId) {
 
-      //for (CloudService cloudService : getCloudServicesForDeployment(nodeId)) {
       Deployment deployment = getDeploymentFromNodeId(nodeId);
 
       if (deployment == null) return null;
@@ -322,45 +321,38 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Deploym
       logger.debug("Deleting deployment(%s) of cloud service (%s)", nodeId, deploymentName);
 
       deleteDeployment(deploymentName, nodeId);
-      /*
-         if (!new ConflictManagementPredicate(api, operationSucceededPredicate) {
+      logger.debug("Deleting cloud service (%s) ...", deploymentName);
+      trackRequest(api.getCloudServiceApi().delete(deploymentName));
+      logger.debug("Cloud service (%s) deleted.", deploymentName);
 
-            @Override
-            protected String operation() {
-               return api.getDeploymentApiForService(deploymentName).delete(nodeId);
-            }
-         }.apply(nodeId)) {
-            final String message = generateIllegalStateExceptionMessage(
-                    "Delete deployment", azureComputeConstants.operationTimeout());
-            logger.warn(message);
-            throw new IllegalStateException(message);
+      if (deployment != null) {
+         for (Role role : deployment.roleList()) {
+            trackRequest(api.getVirtualMachineApiForDeploymentInService(deploymentName, role.roleName()).shutdown(nodeId, POST_SHUTDOWN_ACTION));
          }
-      */
+
+         deleteDeployment(deploymentName, nodeId);
+
          logger.debug("Deleting cloud service (%s) ...", deploymentName);
          trackRequest(api.getCloudServiceApi().delete(deploymentName));
          logger.debug("Cloud service (%s) deleted.", deploymentName);
 
-         if (deployment != null) {
-            for (Role role : deployment.roleList()) {
-               trackRequest(api.getVirtualMachineApiForDeploymentInService(deploymentName, role.roleName()).shutdown(nodeId, POST_SHUTDOWN_ACTION));
+         for (Role role : deployment.roleList()) {
+            final Role.OSVirtualHardDisk disk = role.osVirtualHardDisk();
+            if (disk != null) {
+               if (!new ConflictManagementPredicate(api, operationSucceededPredicate) {
 
-               final Role.OSVirtualHardDisk disk = role.osVirtualHardDisk();
-               if (disk != null) {
-                  if (!new ConflictManagementPredicate(api, operationSucceededPredicate) {
-
-                     @Override
-                     protected String operation() {
-                        return api.getDiskApi().delete(disk.diskName());
-                     }
-                  }.apply(nodeId)) {
-                     final String message = generateIllegalStateExceptionMessage(
-                             "Delete disk", azureComputeConstants.operationTimeout());
-                     logger.warn(message);
+                  @Override
+                  protected String operation() {
+                     return api.getDiskApi().delete(disk.diskName());
                   }
+               }.apply(nodeId)) {
+                  final String message = generateIllegalStateExceptionMessage(
+                          "Delete disk", azureComputeConstants.operationTimeout());
+                  logger.warn(message);
                }
             }
          }
-      //}
+      }
       return deployment;
    }
 

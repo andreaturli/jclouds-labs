@@ -29,7 +29,7 @@
   <!-- TODO: when out of labs, switch to org.jclouds.provider -->
   <artifactId>azurecompute</artifactId>
   <name>jclouds azure compute API</name>
-  <version>1.9.1-20151214.1221</version>
+  <version>1.9.1-20151222.1709</version>
   <description>jclouds components to access an implementation of Azure's Compute Service</description>
   <packaging>bundle</packaging>
 
