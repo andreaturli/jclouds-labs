@@ -22,7 +22,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.google.common.collect.Sets;
 import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.domain.ComputeNode;
 import org.jclouds.azurecompute.arm.domain.Deployment;
@@ -35,24 +34,21 @@ import org.jclouds.azurecompute.arm.domain.VMHardware;
 import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.azurecompute.arm.domain.VMSize;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
-import org.jclouds.azurecompute.arm.util.DeploymentTemplateBuilder;
 import org.jclouds.azurecompute.arm.util.GetEnumValue;
+import org.jclouds.compute.domain.Hardware;
+import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
+import org.jclouds.domain.LoginCredentials;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
-import org.jclouds.domain.LoginCredentials;
-import org.jclouds.compute.domain.Image;
-import org.jclouds.compute.domain.Hardware;
+import com.google.common.collect.Sets;
 
 public class DeploymentToNodeMetadata implements Function<VMDeployment, NodeMetadata> {
-
-   public static final String JCLOUDS_DEFAULT_USERNAME = "root";
-   public static final String AZURE_LOGIN_USERNAME = DeploymentTemplateBuilder.getLoginUserUsername();
-   public static final String AZURE_LOGIN_PASSWORD = DeploymentTemplateBuilder.getLoginPassword();
 
    private static final Map<ComputeNode.Status, NodeMetadata.Status> INSTANCESTATUS_TO_NODESTATUS =
            ImmutableMap.<ComputeNode.Status, NodeMetadata.Status>builder().
@@ -84,15 +80,10 @@ public class DeploymentToNodeMetadata implements Function<VMDeployment, NodeMeta
    }
 
    private final AzureComputeApi api;
-
    private final LocationToLocation locationToLocation;
-
    private final GroupNamingConvention nodeNamingConvention;
-
    private final VMImageToImage vmImageToImage;
-
    private final VMHardwareToHardware vmHardwareToHardware;
-
    private final Map<String, Credentials> credentialStore;
 
    @Inject
@@ -146,20 +137,8 @@ public class DeploymentToNodeMetadata implements Function<VMDeployment, NodeMeta
       }
 
       Credentials credentials = credentialStore.get("node#" + from.deployment().name());
-      if (credentials != null && credentials.identity.equals(JCLOUDS_DEFAULT_USERNAME)) {
-         credentials = new Credentials(AZURE_LOGIN_USERNAME, credentials.credential);
-      }
-      else if (credentials == null) {
-         String username = AZURE_LOGIN_USERNAME;
-         String password = AZURE_LOGIN_PASSWORD;
-         if (username == null) {
-            username = "jclouds";
-         }
-         if (password == null) {
-            password = "Password1!";
-         }
-
-         credentials = new Credentials(username, password);
+      if (credentials != null) {
+         builder.credentials(LoginCredentials.fromCredentials(credentials));
       }
       builder.credentials(LoginCredentials.fromCredentials(credentials));
 

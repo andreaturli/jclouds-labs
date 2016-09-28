@@ -32,7 +32,6 @@ import org.jclouds.azurecompute.arm.compute.functions.LocationToLocation;
 import org.jclouds.azurecompute.arm.compute.functions.VMHardwareToHardware;
 import org.jclouds.azurecompute.arm.compute.functions.VMImageToImage;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
-import org.jclouds.azurecompute.arm.compute.strategy.AzurePopulateDefaultLoginCredentialsForImageStrategy;
 import org.jclouds.azurecompute.arm.compute.strategy.CreateResourceGroupThenCreateNodes;
 import org.jclouds.azurecompute.arm.domain.Location;
 import org.jclouds.azurecompute.arm.domain.ResourceDefinition;
@@ -47,12 +46,13 @@ import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.extensions.ImageExtension;
+import org.jclouds.compute.functions.NodeAndTemplateOptionsToStatement;
+import org.jclouds.compute.functions.NodeAndTemplateOptionsToStatementWithoutPublicKey;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.compute.strategy.CreateNodesInGroupThenAddToSet;
-import org.jclouds.compute.strategy.PopulateDefaultLoginCredentialsForImageStrategy;
 import org.jclouds.logging.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -64,7 +64,6 @@ import com.google.inject.TypeLiteral;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_DATADISKSIZE;
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_IMAGE_LOGIN;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_SUBNET_ADDRESS_PREFIX;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_VNET_ADDRESS_SPACE_PREFIX;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.IMAGE_PUBLISHERS;
@@ -105,8 +104,7 @@ public class AzureComputeServiceContextModule
       });
 
       bind(TemplateOptions.class).to(AzureTemplateOptions.class);
-      bind(PopulateDefaultLoginCredentialsForImageStrategy.class).to(AzurePopulateDefaultLoginCredentialsForImageStrategy.class);
-      //bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
+      bind(NodeAndTemplateOptionsToStatement.class).to(NodeAndTemplateOptionsToStatementWithoutPublicKey.class);
       bind(CreateNodesInGroupThenAddToSet.class).to(CreateResourceGroupThenCreateNodes.class);
       bind(new TypeLiteral<ImageExtension>() {
       }).to(AzureComputeImageExtension.class);
@@ -143,10 +141,6 @@ public class AzureComputeServiceContextModule
       @Inject
       private String azureImagePublishersProperty;
 
-      @Named(DEFAULT_IMAGE_LOGIN)
-      @Inject
-      private String azureDefaultImageLoginProperty;
-
       @Named(DEFAULT_VNET_ADDRESS_SPACE_PREFIX)
       @Inject
       private String azureDefaultVnetAddressPrefixProperty;
@@ -169,10 +163,6 @@ public class AzureComputeServiceContextModule
 
       public String azureImagePublishers() {
          return azureImagePublishersProperty;
-      }
-
-      public String azureDefaultImageLogin() {
-         return azureDefaultImageLoginProperty;
       }
 
       public String azureDefaultVnetAddressPrefixProperty() {

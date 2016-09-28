@@ -54,10 +54,12 @@ import org.jclouds.azurecompute.arm.domain.TemplateParameterType;
 import org.jclouds.azurecompute.arm.domain.VHD;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.domain.LoginCredentials;
 import org.jclouds.json.Json;
 import org.jclouds.predicates.Validator;
 import org.jclouds.predicates.validators.DnsNameValidator;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -65,7 +67,6 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
-import static com.google.common.io.BaseEncoding.base64;
 import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
 
@@ -75,28 +76,23 @@ public class DeploymentTemplateBuilder {
    }
 
    private final String name;
-   private final String azureGroup;
-   private final String group;
    private final Template template;
    private final Json json;
+   private final LoginCredentials loginCredentials;
 
    private AzureTemplateOptions options;
    private Iterable<String> tags;
    private Map<String, String> userMetaData;
    private List<ResourceDefinition> resources;
    private Map<String, String> variables;
-   private static String loginUser;
-   private static String loginPassword;
    private String location;
    private AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants;
 
    private static final String DEPLOYMENT_MODE = "Incremental";
 
    @Inject
-   DeploymentTemplateBuilder(Json json, @Assisted("group") String group, @Assisted("name") String name, @Assisted Template template,
-                             final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants) {
+   DeploymentTemplateBuilder(Json json, @Assisted("group") String group, @Assisted("name") String name, @Assisted Template template, Function<Template, LoginCredentials> templateToLoginCredentials) {
       this.name = name;
-      this.group = group;
       this.template = template;
       this.options = template.getOptions().as(AzureTemplateOptions.class);
       this.tags = template.getOptions().getTags();
@@ -105,29 +101,7 @@ public class DeploymentTemplateBuilder {
       this.resources = new ArrayList<ResourceDefinition>();
       this.location = template.getLocation().getId();
       this.json = json;
-
-      this.azureComputeConstants = azureComputeConstants;
-      this.azureGroup = this.azureComputeConstants.azureResourceGroup();
-
-      String[] defaultLogin = this.azureComputeConstants.azureDefaultImageLogin().split(":");
-      String defaultUser = null;
-      String defaultPassword = null;
-
-      if (defaultLogin.length == 2) {
-         defaultUser = defaultLogin[0].trim();
-         defaultPassword = defaultLogin[1].trim();
-      }
-
-      loginUser = options.getLoginUser() == null ? defaultUser : options.getLoginUser();
-      loginPassword = options.getLoginPassword() == null ? defaultPassword : options.getLoginPassword();
-   }
-
-   public static String getLoginUserUsername() {
-      return loginUser;
-   }
-
-   public static String getLoginPassword() {
-      return loginPassword;
+      this.loginCredentials = templateToLoginCredentials.apply(template);
    }
 
    public Template getTemplate() {
@@ -378,28 +352,24 @@ public class DeploymentTemplateBuilder {
       //Build OS Profile
       final String computerName = name + "pc";
 
-      variables.put("loginUser", loginUser);
+      variables.put("loginUser", loginCredentials.getUser());
       OSProfile.Builder profileBuilder = OSProfile.builder()
-              .adminUsername(loginUser)
+              .adminUsername(loginCredentials.getUser())
               .computerName(computerName);
 
-      profileBuilder.adminPassword(loginPassword);
-      //boolean usePublicKey = options.getPublicKey() != null;
+      boolean usePublicKey = options.getPublicKey() != null;
 
-      if (keyVaultInUse()) {
-         OSProfile.LinuxConfiguration configuration = OSProfile.LinuxConfiguration.create("false",
+      if (usePublicKey) {
+         OSProfile.LinuxConfiguration configuration = OSProfile.LinuxConfiguration.create("true",
                  OSProfile.LinuxConfiguration.SSH.create(Arrays.asList(
                          OSProfile.LinuxConfiguration.SSH.SSHPublicKey.create(
                                  "[concat('/home/',variables('loginUser'),'/.ssh/authorized_keys')]",
-                                 "[parameters('publicKeyFromAzureKeyVault')]"
-                         ))
-                 ));
+                                 options.getPublicKey())
+                 ))
+         );
          profileBuilder.linuxConfiguration(configuration);
-      }
-
-      if (!Strings.isNullOrEmpty(options.getCustomData())){
-         String encodedCustomData = base64().encode(options.getCustomData().getBytes());
-         profileBuilder.customData(encodedCustomData);
+      } else if (loginCredentials.getOptionalPassword().isPresent()) {
+         profileBuilder.adminPassword(loginCredentials.getOptionalPassword().get());
       }
 
       OSProfile osProfile = profileBuilder.build();

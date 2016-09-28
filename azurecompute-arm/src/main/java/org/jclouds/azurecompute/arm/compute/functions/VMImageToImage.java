@@ -16,48 +16,35 @@
  */
 package org.jclouds.azurecompute.arm.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jclouds.azurecompute.arm.compute.functions.DeploymentToNodeMetadata.AZURE_LOGIN_PASSWORD;
-import static org.jclouds.azurecompute.arm.compute.functions.DeploymentToNodeMetadata.AZURE_LOGIN_USERNAME;
+import java.util.Set;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.FluentIterable;
 import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.collect.Memoized;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.ImageBuilder;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
-
-import com.google.common.base.Function;
-import com.google.inject.Inject;
-import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
-import org.jclouds.domain.LoginCredentials;
 import org.jclouds.location.predicates.LocationPredicates;
 
-import java.util.Set;
+import com.google.common.base.Function;
+import com.google.common.base.Supplier;
+import com.google.common.collect.FluentIterable;
+import com.google.inject.Inject;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class VMImageToImage implements Function<VMImage, Image> {
 
    private static final String UNRECOGNIZED = "UNRECOGNIZED";
-
    private static final String UBUNTU = "Ubuntu";
-
    private static final String WINDOWS = "Windows";
-
    private static final String OPENLOGIC = "openLogic";
-
    private static final String CENTOS = "CentOS";
-
    private static final String COREOS = "CoreOS";
-
    private static final String OPENSUSE = "openSUSE";
-
    private static final String SUSE = "SUSE";
-
    private static final String SQL_SERVER = "SQL Server";
-
    private static final String ORACLE_lINUX = "Oracle Linux";
 
    private final Supplier<Set<? extends org.jclouds.domain.Location>> locations;
@@ -103,7 +90,6 @@ public class VMImageToImage implements Function<VMImage, Image> {
    @Override
    public Image apply(final VMImage image) {
 
-      Credentials credentials = new Credentials(AZURE_LOGIN_USERNAME, AZURE_LOGIN_PASSWORD);
       if (image.custom()) {
 
          final ImageBuilder builder = new ImageBuilder()
@@ -115,8 +101,7 @@ public class VMImageToImage implements Function<VMImage, Image> {
                .status(Image.Status.AVAILABLE)
                .version(image.storage())
                .providerId(image.vhd1())
-               .id(encodeFieldsToUniqueIdCustom(image))
-               .defaultCredentials(LoginCredentials.fromCredentials(credentials));
+               .id(encodeFieldsToUniqueIdCustom(image));
 
          final OperatingSystem.Builder osBuilder = osFamily().apply(image);
          Image retimage = builder.operatingSystem(osBuilder.build()).build();
@@ -130,7 +115,6 @@ public class VMImageToImage implements Function<VMImage, Image> {
                .status(Image.Status.AVAILABLE)
                .version(image.sku())
                .id(encodeFieldsToUniqueId(image))
-               .defaultCredentials(LoginCredentials.fromCredentials(credentials))
                .providerId(image.publisher())
                .location(image.globallyAvailable() ? null : FluentIterable.from(locations.get())
                      .firstMatch(LocationPredicates.idEquals(image.location()))

@@ -16,11 +16,6 @@
  */
 package org.jclouds.azurecompute.arm.compute;
 
-import static com.google.common.base.Preconditions.checkState;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.jclouds.util.Predicates2.retry;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +52,6 @@ import org.jclouds.azurecompute.arm.util.DeploymentTemplateBuilder;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.reference.ComputeServiceConstants;
-import org.jclouds.domain.LoginCredentials;
 import org.jclouds.location.Region;
 import org.jclouds.logging.Logger;
 
@@ -73,6 +67,11 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.net.UrlEscapers;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.jclouds.util.Predicates2.retry;
+
 /**
  * Defines the connection between the {@link AzureComputeApi} implementation and the jclouds
  * {@link org.jclouds.compute.ComputeService}.
@@ -80,12 +79,12 @@ import com.google.common.net.UrlEscapers;
 @Singleton
 public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeployment, VMHardware, VMImage, Location> {
 
-   private String azureGroup;
-   protected final CleanupResources cleanupResources;
-
    @Resource
    @Named(ComputeServiceConstants.COMPUTE_LOGGER)
    private Logger logger = Logger.NULL;
+
+   private String azureGroup;
+   private final CleanupResources cleanupResources;
    private final AzureComputeApi api;
    private final AzureComputeConstants azureComputeConstants;
    private final Supplier<Set<String>> regionIds;
@@ -113,12 +112,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
            final String group, final String name, final Template template) {
 
       DeploymentTemplateBuilder deploymentTemplateBuilder = api.deploymentTemplateFactory().create(group, name, template);
-
-      final String loginUser = DeploymentTemplateBuilder.getLoginUserUsername();
-      final String loginPassword = DeploymentTemplateBuilder.getLoginPassword();
-
-      DeploymentBody deploymentTemplateBody =  deploymentTemplateBuilder.getDeploymentTemplate();
-
+      DeploymentBody deploymentTemplateBody = deploymentTemplateBuilder.getDeploymentTemplate();
       DeploymentProperties properties = DeploymentProperties.create(deploymentTemplateBody);
 
       final String deploymentTemplate = UrlEscapers.urlFormParameterEscaper().escape(deploymentTemplateBuilder.getDeploymentTemplateJson(properties));
@@ -151,16 +145,8 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
          throw new IllegalStateException(illegalStateExceptionMessage);
       }
       final VMDeployment deployment = deployments.iterator().next();
-      NodeAndInitialCredentials<VMDeployment> credential;
-      if (template.getOptions().getPublicKey() != null){
-         String privateKey = template.getOptions().getPrivateKey();
-         credential = new NodeAndInitialCredentials<VMDeployment>(deployment, name,
-                 LoginCredentials.builder().user(loginUser).privateKey(privateKey).authenticateSudo(true).build());
-      } else {
-         credential = new NodeAndInitialCredentials<VMDeployment>(deployment, name,
-                 LoginCredentials.builder().user(loginUser).password(loginPassword).authenticateSudo(true).build());
-      }
-      return credential;
+      // Safe to pass null credentials here, as jclouds will default populate the node with the default credentials from the image, or the ones in the options, if provided.
+      return new NodeAndInitialCredentials<VMDeployment>(deployment, name, null);
    }
 
    @Override
