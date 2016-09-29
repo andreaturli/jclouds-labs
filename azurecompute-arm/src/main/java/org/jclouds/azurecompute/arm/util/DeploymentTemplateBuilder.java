@@ -16,6 +16,10 @@
  */
 package org.jclouds.azurecompute.arm.util;
 
+import static com.google.common.io.BaseEncoding.base64;
+import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
+import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,9 +69,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-
-import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
 
 public class DeploymentTemplateBuilder {
    public interface Factory {
@@ -213,7 +214,6 @@ public class DeploymentTemplateBuilder {
 
       String ipConfigurationName = name + "ipconfig";
       String subnetId = options.getSubnetId();
-      String vnetName = options.getVirtualNetworkName();
 
       variables.put("ipConfigurationName", ipConfigurationName);
       variables.put("subnetReference", subnetId);
@@ -357,17 +357,22 @@ public class DeploymentTemplateBuilder {
 
       boolean usePublicKey = options.getPublicKey() != null;
 
-      if (usePublicKey) {
+      if (usePublicKey || keyVaultInUse()) {
          OSProfile.LinuxConfiguration configuration = OSProfile.LinuxConfiguration.create("true",
                  OSProfile.LinuxConfiguration.SSH.create(Arrays.asList(
                          OSProfile.LinuxConfiguration.SSH.SSHPublicKey.create(
-                                 "[concat('/home/',variables('loginUser'),'/.ssh/authorized_keys')]",
-                                 options.getPublicKey())
+                               "[concat('/home/',variables('loginUser'),'/.ssh/authorized_keys')]",
+                               keyVaultInUse() ? "[parameters('publicKeyFromAzureKeyVault')]" : options.getPublicKey())
                  ))
          );
          profileBuilder.linuxConfiguration(configuration);
       } else if (loginCredentials.getOptionalPassword().isPresent()) {
          profileBuilder.adminPassword(loginCredentials.getOptionalPassword().get());
+      }
+      
+      if (!Strings.isNullOrEmpty(options.getCustomData())){
+         String encodedCustomData = base64().encode(options.getCustomData().getBytes());
+         profileBuilder.customData(encodedCustomData);
       }
 
       OSProfile osProfile = profileBuilder.build();

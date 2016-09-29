@@ -43,10 +43,13 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
 import org.jclouds.domain.LocationBuilder;
 import org.jclouds.domain.LocationScope;
+import org.jclouds.domain.LoginCredentials;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.Iterables;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -229,14 +232,20 @@ public class DeploymentTemplateBuilderTest extends BaseAzureComputeApiMockTest {
    }
 
    private Template getMockTemplate(TemplateOptions options) {
-      ((AzureTemplateOptions)options).virtualNetworkName(vnetName);
-      ((AzureTemplateOptions)options).subnetId(subnetId);
+      options.as(AzureTemplateOptions.class).virtualNetworkName(vnetName);
+      options.as(AzureTemplateOptions.class).subnetId(subnetId);
+      
+      LoginCredentials defaultImageCredentials = context.utils().injector()
+            .getInstance(Key.get(LoginCredentials.class, Names.named("image")));
 
       Location provider = (new LocationBuilder()).scope(LocationScope.PROVIDER).id("azurecompute-arm").description("azurecompute-arm").build();
       Location region = (new LocationBuilder()).scope(LocationScope.REGION).id("northeurope").description("North Europe").parent(provider).build();
       OperatingSystem os = OperatingSystem.builder().name("osName").version("osVersion").description("osDescription").arch("X86_32").build();
       //Note that version is set to "latest"
-      Image image = (new ImageBuilder()).id("imageId").providerId("imageId").name("imageName").description("imageDescription").version("sku").operatingSystem(os).status(Image.Status.AVAILABLE).location(region).build();
+      
+      Image image = (new ImageBuilder()).id("imageId").providerId("imageId").name("imageName")
+            .description("imageDescription").version("sku").operatingSystem(os).status(Image.Status.AVAILABLE)
+            .location(region).defaultCredentials(defaultImageCredentials).build();
       Hardware hardware = (new HardwareBuilder()).id("Standard_A0").build();
       return new TemplateImpl(image, hardware, region, options);
    }

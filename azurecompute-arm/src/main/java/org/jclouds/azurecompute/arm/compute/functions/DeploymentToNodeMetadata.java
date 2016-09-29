@@ -23,7 +23,6 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
-import org.jclouds.azurecompute.arm.domain.ComputeNode;
 import org.jclouds.azurecompute.arm.domain.Deployment;
 import org.jclouds.azurecompute.arm.domain.ImageReference;
 import org.jclouds.azurecompute.arm.domain.IpConfiguration;
@@ -49,13 +48,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 public class DeploymentToNodeMetadata implements Function<VMDeployment, NodeMetadata> {
-
-   private static final Map<ComputeNode.Status, NodeMetadata.Status> INSTANCESTATUS_TO_NODESTATUS =
-           ImmutableMap.<ComputeNode.Status, NodeMetadata.Status>builder().
-                   put(ComputeNode.Status.GOOD, NodeMetadata.Status.RUNNING).
-                   put(ComputeNode.Status.BAD, NodeMetadata.Status.ERROR).
-                   put(ComputeNode.Status.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).
-                   build();
 
    // When using the Deployment API to deploy an ARM template, the deployment goes through
    // stages.  Accepted -> Running -> Succeeded.  Only when the deployment has SUCCEEDED is
