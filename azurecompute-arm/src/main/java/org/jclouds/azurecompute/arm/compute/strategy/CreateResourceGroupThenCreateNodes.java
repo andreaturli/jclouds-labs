@@ -16,8 +16,6 @@
  */
 package org.jclouds.azurecompute.arm.compute.strategy;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -27,12 +25,13 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import com.google.common.collect.ImmutableMap;
 import org.jclouds.Constants;
+import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.domain.ResourceGroup;
 import org.jclouds.azurecompute.arm.domain.Subnet;
+import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.azurecompute.arm.features.ResourceGroupApi;
 import org.jclouds.azurecompute.arm.features.SubnetApi;
 import org.jclouds.azurecompute.arm.features.VirtualNetworkApi;
@@ -45,12 +44,14 @@ import org.jclouds.compute.strategy.CreateNodeWithGroupEncodedIntoName;
 import org.jclouds.compute.strategy.CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMap;
 import org.jclouds.compute.strategy.ListNodesStrategy;
 import org.jclouds.compute.strategy.impl.CreateNodesWithGroupEncodedIntoNameThenAddToSet;
-import org.jclouds.azurecompute.arm.AzureComputeApi;
-import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.logging.Logger;
+
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Singleton
 public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEncodedIntoNameThenAddToSet {
@@ -81,7 +82,13 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
    public Map<?, ListenableFuture<Void>> execute(String group, int count, Template template,
                                                  Set<NodeMetadata> goodNodes, Map<NodeMetadata, Exception> badNodes,
                                                  Multimap<NodeMetadata, CustomizationResponse> customizationResponses) {
-
+      // If there is a script to be run on the node and public key
+      // authentication has been configured, warn users if the private key
+      // is not present
+      if (hasRunScriptWithKeyAuthAndNoPrivateKey(template)) {
+         logger.warn(">> a runScript was configured but no SSH key has been provided. " +
+                 "Authentication will delegate to the ssh-agent");
+      }
       String azureGroupName = this.azureComputeConstants.azureResourceGroup();
 
       AzureTemplateOptions options = template.getOptions().as(AzureTemplateOptions.class);
@@ -91,7 +98,7 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
       final String location = template.getLocation().getId();
 
       if (resourceGroup == null){
-         final Map<String, String> tags = ImmutableMap.of("description", "jClouds managed VMs");
+         final Map<String, String> tags = ImmutableMap.of("description", "jclouds managed VMs");
          resourceGroupApi.create(azureGroupName, location, tags).name();
       }
 
@@ -135,6 +142,11 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
 
       options.virtualNetworkName(virtualNetworkName);
       options.subnetId(subnet.id());
-
    }
+
+   private static boolean hasRunScriptWithKeyAuthAndNoPrivateKey(Template template) {
+      return template.getOptions().getRunScript() != null && template.getOptions().getPublicKey() != null
+              && !template.getOptions().hasLoginPrivateKeyOption();
+   }
+   
 }

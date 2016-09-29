@@ -92,7 +92,7 @@ public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
       properties.setProperty(TIMEOUT_NODE_TERMINATED, scriptTimeout + "");
       properties.setProperty(TIMEOUT_NODE_SUSPENDED, scriptTimeout + "");
       properties.put(RESOURCE_GROUP_NAME, "a4");
-      properties.put(TEMPLATE, "locationId=westeurope");
+      properties.put(TEMPLATE, "locationId=northeurope");
       properties.put(IMAGE_PUBLISHERS, "Canonical");
 
       AzureLiveTestUtils.defaultProperties(properties);

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule;
 import org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.domain.DataDisk;
@@ -86,7 +85,6 @@ public class DeploymentTemplateBuilder {
    private List<ResourceDefinition> resources;
    private Map<String, String> variables;
    private String location;
-   private AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants;
 
    private static final String DEPLOYMENT_MODE = "Incremental";
 
@@ -402,11 +400,12 @@ public class DeploymentTemplateBuilder {
       //Create Data Disk(s) and add to list
       final String dataDiskName = name + "datadisk";
       variables.put("dataDiskName", dataDiskName);
-
+      final String dataDiskSize = "100";
+      
       List<DataDisk> dataDisks = new ArrayList<DataDisk>();
       DataDisk dataDisk = DataDisk.builder()
               .name("[variables('dataDiskName')]")
-              .diskSizeGB(azureComputeConstants.azureDefaultDataDiskSizeProperty())
+              .diskSizeGB(dataDiskSize)
               .lun(0)
               .vhd(
                       VHD.create("[concat('http://',variables('storageAccountName'),'.blob.core.windows.net/',variables('storageAccountContainerName'),'/',variables('dataDiskName'),'.vhd')]")
