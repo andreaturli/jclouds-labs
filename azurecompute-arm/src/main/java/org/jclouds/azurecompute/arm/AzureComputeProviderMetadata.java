@@ -74,6 +74,9 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.put(DEFAULT_SUBNET_ADDRESS_PREFIX, "10.0.0.0/24");
       properties.put(DEFAULT_DATADISKSIZE, "100");
       properties.put(IMAGE_PUBLISHERS, "Canonical,RedHat");
+      // Default credentials for all images
+      properties.put("jclouds.azurecompute-arm.image.login-user", "jclouds:Password1!");
+      properties.put("jclouds.azurecompute-arm.image.authenticate-sudo", "true");      
       properties.put(TIMEOUT_NODE_TERMINATED, 60 * 10 * 1000);
       return properties;
    }
