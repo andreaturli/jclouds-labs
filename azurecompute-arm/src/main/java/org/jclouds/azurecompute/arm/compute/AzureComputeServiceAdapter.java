@@ -44,7 +44,6 @@ import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.azurecompute.arm.domain.VMSize;
 import org.jclouds.azurecompute.arm.domain.Value;
 import org.jclouds.azurecompute.arm.domain.Version;
-import org.jclouds.azurecompute.arm.features.DeploymentApi;
 import org.jclouds.azurecompute.arm.features.OSImageApi;
 import org.jclouds.azurecompute.arm.functions.CleanupResources;
 import org.jclouds.azurecompute.arm.util.BlobHelper;
@@ -114,39 +113,34 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
       DeploymentTemplateBuilder deploymentTemplateBuilder = api.deploymentTemplateFactory().create(group, name, template);
       DeploymentBody deploymentTemplateBody = deploymentTemplateBuilder.getDeploymentTemplate();
       DeploymentProperties properties = DeploymentProperties.create(deploymentTemplateBody);
-
       final String deploymentTemplate = UrlEscapers.urlFormParameterEscaper().escape(deploymentTemplateBuilder.getDeploymentTemplateJson(properties));
 
       logger.debug("Deployment created with name: %s group: %s", name, group);
 
-
-      final Set<VMDeployment> deployments = Sets.newHashSet();
-
-      final DeploymentApi deploymentApi = api.getDeploymentApi(azureGroup);
-
+      Deployment deployment = api.getDeploymentApi(azureGroup).create(name, deploymentTemplate);
       if (!retry(new Predicate<String>() {
          @Override
          public boolean apply(final String name) {
-            Deployment deployment = deploymentApi.create(name, deploymentTemplate);
-
-            if (deployment != null) {
-               VMDeployment vmDeployment = VMDeployment.create(deployment);
-               deployments.add(vmDeployment);
-            } else {
-               logger.debug("Failed to create deployment!");
+            Deployment deployment = api.getDeploymentApi(azureGroup).get(name);
+            if (deployment == null) return false;
+            Deployment.ProvisioningState state = Deployment.ProvisioningState.fromValue(deployment.properties().provisioningState());
+            if (state == Deployment.ProvisioningState.FAILED) {
+               logger.error(String.format("Deployment %s failed", deployment));
+               cleanupResources.apply(name);
+               throw new IllegalStateException(String.format("Deployment %s failed", deployment));
             }
-            return !deployments.isEmpty();
+            return state == Deployment.ProvisioningState.SUCCEEDED;
          }
-      }, azureComputeConstants.operationTimeout(), 1, SECONDS).apply(name)) {
+      }, azureComputeConstants.operationTimeout(), 1, SECONDS).apply(deployment.name())) {
          final String illegalStateExceptionMessage = format("Deployment %s was not created within %sms so it will be destroyed.",
                  name, azureComputeConstants.operationTimeout());
          logger.warn(illegalStateExceptionMessage);
-         destroyNode(name);
+         cleanupResources.apply(name);
          throw new IllegalStateException(illegalStateExceptionMessage);
       }
-      final VMDeployment deployment = deployments.iterator().next();
+      VMDeployment vmDeployment = deploymentToVMDeployment.apply(api.getDeploymentApi(azureGroup).get(name));
       // Safe to pass null credentials here, as jclouds will default populate the node with the default credentials from the image, or the ones in the options, if provided.
-      return new NodeAndInitialCredentials<VMDeployment>(deployment, name, null);
+      return new NodeAndInitialCredentials<VMDeployment>(vmDeployment, name, null);
    }
 
    @Override
