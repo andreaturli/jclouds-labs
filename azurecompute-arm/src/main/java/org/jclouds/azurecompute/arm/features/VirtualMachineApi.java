@@ -71,8 +71,7 @@ public interface VirtualMachineApi {
     */
    @Named("GetVirtualMachineInstance")
    @GET
-   @Path("/{name}")
-   @QueryParams(keys = "$expand", values="instanceView")
+   @Path("/{name}/instanceView")
    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
    VirtualMachineInstance getInstanceDetails(@PathParam("name") String name);
 
