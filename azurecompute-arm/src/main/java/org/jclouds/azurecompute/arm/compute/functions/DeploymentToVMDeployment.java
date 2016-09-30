@@ -16,24 +16,23 @@
  */
 package org.jclouds.azurecompute.arm.compute.functions;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
-import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule;
 import org.jclouds.azurecompute.arm.domain.Deployment;
+import org.jclouds.azurecompute.arm.domain.Deployment.Dependency;
 import org.jclouds.azurecompute.arm.domain.NetworkInterfaceCard;
 import org.jclouds.azurecompute.arm.domain.PublicIPAddress;
 import org.jclouds.azurecompute.arm.domain.VMDeployment;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
-import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Iterables;
 
 /**
  * Converts an Deployment into a VMDeployment.
@@ -41,53 +40,47 @@ import com.google.common.base.Function;
 @Singleton
 public class DeploymentToVMDeployment implements Function<Deployment, VMDeployment> {
 
-   private final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants;
-
    private final AzureComputeApi api;
 
    @Inject
-   DeploymentToVMDeployment(AzureComputeApi api, final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants) {
+   DeploymentToVMDeployment(AzureComputeApi api) {
       this.api = api;
-      this.azureComputeConstants = azureComputeConstants;
    }
 
    @Override
    public VMDeployment apply(final Deployment deployment) {
-      String id = deployment.id();
-      List<PublicIPAddress> ipAddressList = getIPAddresses(deployment);
-      List<NetworkInterfaceCard> networkInterfaceCards = getNetworkInterfaceCards(deployment);
-      VirtualMachine vm = api.getVirtualMachineApi(azureComputeConstants.azureResourceGroup()).get(id);
-      VirtualMachineInstance vmInstanceDetails = api.getVirtualMachineApi(azureComputeConstants.azureResourceGroup()).getInstanceDetails(id);
-      Map<String, String> userMetaData = null;
-      Iterable<String> tags = null;
-      if (vm != null && vm.tags() != null) {
-         userMetaData = vm.tags();
-         String tagString = userMetaData.get("tags");
-         tags = Arrays.asList(tagString.split(","));
-      }
-      return VMDeployment.create(deployment, ipAddressList, vmInstanceDetails, vm, networkInterfaceCards, userMetaData, tags);
-   }
-
-   private List<PublicIPAddress> getIPAddresses(Deployment deployment) {
-      List<PublicIPAddress> list = new ArrayList<PublicIPAddress>();
+      if (deployment.properties() == null || deployment.properties().dependencies() == null) return null;
+      List<Dependency> dependencies = deployment.properties().dependencies();
       String resourceGroup = getResourceGroupFromId(deployment.id());
 
-      if (deployment.properties() != null && deployment.properties().dependencies() != null) {
-         List<Deployment.Dependency> dependencies = deployment.properties().dependencies();
-         for (int d = 0; d < dependencies.size(); d++) {
-            if (dependencies.get(d).resourceType().equals("Microsoft.Network/networkInterfaces")) {
-               List<Deployment.Dependency> dependsOn = dependencies.get(d).dependsOn();
-               for (int e = 0; e < dependsOn.size(); e++) {
-                  if (dependsOn.get(e).resourceType().equals("Microsoft.Network/publicIPAddresses")) {
-                     String resourceName = dependsOn.get(e).resourceName();
-                     PublicIPAddress ip = api.getPublicIPAddressApi(resourceGroup).get(resourceName);
-                     list.add(ip);
-                     break;
-                  }
-               }
-            }
-         }
-      }
+      VirtualMachine virtualMachine = getVirtualMachine(dependencies, resourceGroup);
+      
+      List<NetworkInterfaceCard> networkInterfaceCards = getNetworkInterfaceCards(dependencies, resourceGroup);
+      List<PublicIPAddress> ipAddressList = getPublicIPAddress(dependencies, resourceGroup);
+
+      return VMDeployment.create(deployment.name(), virtualMachine, ipAddressList, networkInterfaceCards);
+   }
+
+   private VirtualMachine getVirtualMachine(List<Dependency> dependencies, String resourceGroup) {
+      Dependency dependency = Iterables.find(dependencies, new DependencyPredicate("Microsoft.Compute/virtualMachines"));
+      return api.getVirtualMachineApi(resourceGroup).get(dependency.resourceName());
+   }
+
+   private List<PublicIPAddress> getPublicIPAddress(List<Dependency> dependencies, final String resourceGroup) {
+      List<PublicIPAddress> list = FluentIterable.from(dependencies)
+              .filter(new DependencyPredicate("Microsoft.Network/networkInterfaces"))
+              .transformAndConcat(new Function<Dependency, Iterable<Dependency>>() {
+                 @Override
+                 public Iterable<Dependency> apply(Dependency input) {
+                    return input.dependsOn();
+                 }
+              }).filter(new DependencyPredicate("Microsoft.Network/publicIPAddresses"))
+              .transform(new Function<Dependency, PublicIPAddress>() {
+                 @Override
+                 public PublicIPAddress apply(Dependency input) {
+                    return api.getPublicIPAddressApi(resourceGroup).get(input.resourceName());
+                 }
+              }).toList();
       return list;
    }
 
@@ -101,21 +94,29 @@ public class DeploymentToVMDeployment implements Function<Deployment, VMDeployme
       return resourceGroup;
    }
 
-   private List<NetworkInterfaceCard> getNetworkInterfaceCards(Deployment deployment) {
-      List<NetworkInterfaceCard> result = new ArrayList<NetworkInterfaceCard>();
-
-      String resourceGroup = getResourceGroupFromId(deployment.id());
-
-      if (deployment.properties() != null && deployment.properties().dependencies() != null) {
-         for (Deployment.Dependency dependency : deployment.properties().dependencies()) {
-            if (dependency.resourceType().equals("Microsoft.Network/networkInterfaces")) {
-               String resourceName = dependency.resourceName();
-               NetworkInterfaceCard nic = api.getNetworkInterfaceCardApi(resourceGroup).get(resourceName);
-               result.add(nic);
-            }
+   private List<NetworkInterfaceCard> getNetworkInterfaceCards(List<Dependency> dependencies, final String resourceGroup) {
+      List<NetworkInterfaceCard> result = FluentIterable.from(dependencies)
+              .filter(new DependencyPredicate("Microsoft.Network/networkInterfaces"))
+      .transform(new Function<Dependency, NetworkInterfaceCard>() {
+         @Override
+         public NetworkInterfaceCard apply(Dependency input) {
+            return api.getNetworkInterfaceCardApi(resourceGroup).get(input.resourceName());
          }
-      }
+      }).toList();
       return result;
    }
 
+   private static class DependencyPredicate implements Predicate<Dependency> {
+
+      private final String resourceType;
+      
+      public DependencyPredicate(String resourceType) {
+         this.resourceType = resourceType;
+      }
+
+      @Override
+      public boolean apply(Dependency dependency) {
+         return dependency.resourceType().equals(resourceType);
+      }
+   }
 }

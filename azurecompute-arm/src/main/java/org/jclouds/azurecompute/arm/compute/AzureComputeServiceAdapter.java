@@ -138,6 +138,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
          cleanupResources.apply(name);
          throw new IllegalStateException(illegalStateExceptionMessage);
       }
+
       VMDeployment vmDeployment = deploymentToVMDeployment.apply(api.getDeploymentApi(azureGroup).get(name));
       // Safe to pass null credentials here, as jclouds will default populate the node with the default credentials from the image, or the ones in the options, if provided.
       return new NodeAndInitialCredentials<VMDeployment>(vmDeployment, name, null);
@@ -295,11 +296,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
    @Override
    public VMDeployment getNode(final String id) {
       Deployment deployment = api.getDeploymentApi(azureGroup).get(id);
-      if (deployment == null) return null;
-      if (isDeploymentInRegions.apply(deployment)) {
-         return deploymentToVMDeployment.apply(deployment);
-      }
-      return null;
+      return deploymentToVMDeployment.apply(deployment);
    }
 
    @Override
@@ -344,7 +341,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<VMDeplo
       return Iterables.filter(listNodes(), new Predicate<VMDeployment>() {
          @Override
          public boolean apply(final VMDeployment input) {
-            return Iterables.contains(ids, input.deployment().name());
+            return Iterables.contains(ids, input.virtualMachine().name());
          }
       });
    }

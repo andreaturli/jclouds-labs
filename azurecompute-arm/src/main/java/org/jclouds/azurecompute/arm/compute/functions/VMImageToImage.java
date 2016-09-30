@@ -18,6 +18,7 @@ package org.jclouds.azurecompute.arm.compute.functions;
 
 import java.util.Set;
 
+import org.jclouds.azurecompute.arm.domain.ImageReference;
 import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.collect.Memoized;
 import org.jclouds.compute.domain.Image;
@@ -49,6 +50,10 @@ public class VMImageToImage implements Function<VMImage, Image> {
 
    private final Supplier<Set<? extends org.jclouds.domain.Location>> locations;
 
+   public static String encodeFieldsToUniqueId(boolean globallyAvailable, String locatioName, ImageReference imageReference){
+      return (globallyAvailable ? "global" : locatioName) + "/" + imageReference.publisher() + "/" + imageReference.offer() + "/" + imageReference.sku();
+   }
+   
    public static String encodeFieldsToUniqueId(VMImage imageReference){
       return (imageReference.globallyAvailable() ? "global" : imageReference.location()) + "/" + imageReference.publisher() + "/" + imageReference.offer() + "/" + imageReference.sku();
    }
