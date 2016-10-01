@@ -16,35 +16,36 @@
  */
 package org.jclouds.azurecompute.arm.features;
 
-import com.google.common.collect.ImmutableList;
-import com.squareup.okhttp.mockwebserver.MockResponse;
+import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.jclouds.azurecompute.arm.domain.DataDisk;
+import org.jclouds.azurecompute.arm.domain.DiagnosticsProfile;
 import org.jclouds.azurecompute.arm.domain.HardwareProfile;
 import org.jclouds.azurecompute.arm.domain.IdReference;
 import org.jclouds.azurecompute.arm.domain.ImageReference;
-import org.jclouds.azurecompute.arm.domain.VirtualMachine;
-import org.jclouds.azurecompute.arm.domain.VHD;
+import org.jclouds.azurecompute.arm.domain.NetworkProfile;
 import org.jclouds.azurecompute.arm.domain.OSDisk;
 import org.jclouds.azurecompute.arm.domain.OSProfile;
-import org.jclouds.azurecompute.arm.domain.DiagnosticsProfile;
-import org.jclouds.azurecompute.arm.domain.NetworkProfile;
 import org.jclouds.azurecompute.arm.domain.StorageProfile;
-import org.jclouds.azurecompute.arm.domain.DataDisk;
+import org.jclouds.azurecompute.arm.domain.VHD;
+import org.jclouds.azurecompute.arm.domain.VirtualMachine;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties;
 import org.jclouds.azurecompute.arm.internal.BaseAzureComputeApiMockTest;
 import org.testng.annotations.Test;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import java.text.DateFormat;
+import com.google.common.collect.ImmutableList;
+import com.squareup.okhttp.mockwebserver.MockResponse;
 
 import static com.google.common.collect.Iterables.isEmpty;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Test(groups = "unit", testName = "VirtualMachineApiMockTest", singleThreaded = true)
@@ -231,7 +232,7 @@ public class VirtualMachineApiMockTest extends BaseAzureComputeApiMockTest {
               "https://groupname2760.blob.core.windows.net/");
       DiagnosticsProfile diagnosticsProfile = DiagnosticsProfile.create(bootDiagnostics);
       VirtualMachineProperties properties = VirtualMachineProperties.create("27ee085b-d707-xxxx-yyyy-2370e2eb1cc1",
-              null, null, hwProf, storageProfile, osProfile, networkProfile, diagnosticsProfile, "Creating");
+              null, null, hwProf, storageProfile, osProfile, networkProfile, diagnosticsProfile, VirtualMachineProperties.ProvisioningState.CREATING);
       return properties;
    }
 

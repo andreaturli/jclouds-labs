@@ -27,17 +27,17 @@ import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.AzureComputeService;
 import org.jclouds.azurecompute.arm.compute.AzureComputeServiceAdapter;
 import org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension;
-import org.jclouds.azurecompute.arm.compute.functions.DeploymentToNodeMetadata;
 import org.jclouds.azurecompute.arm.compute.functions.LocationToLocation;
 import org.jclouds.azurecompute.arm.compute.functions.VMHardwareToHardware;
 import org.jclouds.azurecompute.arm.compute.functions.VMImageToImage;
+import org.jclouds.azurecompute.arm.compute.functions.VirtualMachineToNodeMetadata;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.compute.strategy.CreateResourceGroupThenCreateNodes;
 import org.jclouds.azurecompute.arm.domain.Location;
 import org.jclouds.azurecompute.arm.domain.ResourceDefinition;
-import org.jclouds.azurecompute.arm.domain.VMDeployment;
 import org.jclouds.azurecompute.arm.domain.VMHardware;
 import org.jclouds.azurecompute.arm.domain.VMImage;
+import org.jclouds.azurecompute.arm.domain.VirtualMachine;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 import org.jclouds.azurecompute.arm.functions.ParseJobStatus;
 import org.jclouds.compute.ComputeService;
@@ -80,7 +80,7 @@ import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_T
 import static org.jclouds.util.Predicates2.retry;
 
 public class AzureComputeServiceContextModule
-        extends ComputeServiceAdapterContextModule<VMDeployment, VMHardware, VMImage, Location> {
+        extends ComputeServiceAdapterContextModule<VirtualMachine, VMHardware, VMImage, Location> {
 
    @Resource
    @Named(ComputeServiceConstants.COMPUTE_LOGGER)
@@ -89,18 +89,22 @@ public class AzureComputeServiceContextModule
    @Override
    protected void configure() {
       super.configure();
-      bind(new TypeLiteral<ComputeServiceAdapter<VMDeployment, VMHardware, VMImage, Location>>() {
+      bind(new TypeLiteral<ComputeServiceAdapter<VirtualMachine, VMHardware, VMImage, Location>>() {
       }).to(AzureComputeServiceAdapter.class);
       bind(new TypeLiteral<Function<VMImage, org.jclouds.compute.domain.Image>>() {
       }).to(VMImageToImage.class);
       bind(new TypeLiteral<Function<VMHardware, Hardware>>() {
       }).to(VMHardwareToHardware.class);
+      /*
       bind(new TypeLiteral<Function<VMDeployment, NodeMetadata>>() {
       }).to(DeploymentToNodeMetadata.class);
+      */
+      bind(new TypeLiteral<Function<VirtualMachine, NodeMetadata>>() {
+      }).to(VirtualMachineToNodeMetadata.class);
       bind(new TypeLiteral<Function<Location, org.jclouds.domain.Location>>() {
       }).to(LocationToLocation.class);
       bind(ComputeService.class).to(AzureComputeService.class);
-      install(new LocationsFromComputeServiceAdapterModule<VMDeployment, VMHardware, VMImage, Location>() {
+      install(new LocationsFromComputeServiceAdapterModule<VirtualMachine, VMHardware, VMImage, Location>() {
       });
 
       bind(TemplateOptions.class).to(AzureTemplateOptions.class);

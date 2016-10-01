@@ -22,12 +22,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.jclouds.azurecompute.arm.AzureComputeProviderMetadata;
+import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.internal.AzureLiveTestUtils;
 import org.jclouds.compute.RunScriptOnNodesException;
 import org.jclouds.compute.domain.ExecResponse;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
 import org.jclouds.compute.predicates.NodePredicates;
 import org.jclouds.domain.LoginCredentials;
@@ -99,6 +101,14 @@ public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
       checkNotNull(setIfTestSystemPropertyPresent(properties, "oauth.endpoint"), "test.oauth.endpoint");
 
       return properties;
+   }
+
+   @Override
+   protected Template buildTemplate(TemplateBuilder templateBuilder) {
+      Template template = templateBuilder.build();
+      AzureTemplateOptions options = template.getOptions().as(AzureTemplateOptions.class);
+      options.authorizePublicKey("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNnvPZ25wZK19grrbal6R5JP1hLRBUuNh86KxZVMAFkGd5ouVSgO9dFajHZ45Q4mbaTkdOiqf7otMLDzkaztEa7oLK7Jso0Y0LOi+nT4gf38rvbEF5mq069G9b9XqlNleaGnpLuTN54iEK8c4TWZxIJqgelHEHhjp7V1asmilBbpZDmwA5cTt9vGJIhqA/BptKH3folZKeAQjRa1ZRSwSQUnk9rBKn4PKSRDojVa9A9jKt4qboJh5q7ZjtE8z+665F/4TgLzElTXUA8+uUFGpuynMSmQEt301e18dXAl+vBr8fMiThcoVVbdVdqdjXsw75fMXPAgqhjrw8k3+0/4P9 andrea@bigmac.local");
+      return template;
    }
 
    @Override

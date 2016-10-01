@@ -16,28 +16,29 @@
  */
 package  org.jclouds.azurecompute.arm.functions;
 
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TIMEOUT_RESOURCE_DELETED;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
+import java.net.URI;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import com.google.common.base.Predicate;
 import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule;
-import org.jclouds.azurecompute.arm.domain.Deployment;
+import org.jclouds.azurecompute.arm.domain.IdReference;
+import org.jclouds.azurecompute.arm.domain.IpConfiguration;
 import org.jclouds.azurecompute.arm.domain.NetworkInterfaceCard;
-import org.jclouds.azurecompute.arm.domain.NetworkSecurityGroup;
-import org.jclouds.azurecompute.arm.domain.PublicIPAddress;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.logging.Logger;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 
-import java.net.URI;
+import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TIMEOUT_RESOURCE_DELETED;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
 
 @Singleton
 public class CleanupResources implements Function<String, Boolean> {
@@ -70,8 +71,33 @@ public class CleanupResources implements Function<String, Boolean> {
       String group = azureComputeConstants.azureResourceGroup();
 
       VirtualMachine vm = api.getVirtualMachineApi(group).get(id);
+
       if (vm != null) {
          URI uri = api.getVirtualMachineApi(group).delete(id);
+         nodeTerminated.apply(uri);
+
+         for (IdReference idReference : vm.properties().networkProfile().networkInterfaces()) {
+            String nicName = Iterables.getLast(Splitter.on("/").split(idReference.id()));
+            NetworkInterfaceCard networkInterfaceCard = api.getNetworkInterfaceCardApi(group).get(nicName);
+
+            api.getNetworkInterfaceCardApi(group).delete(nicName);
+            // TODO waitForJob
+
+            for (IpConfiguration ipConfiguration : networkInterfaceCard.properties().ipConfigurations()) {
+               if (ipConfiguration.properties().publicIPAddress() != null) {
+                  String publicIpId = ipConfiguration.properties().publicIPAddress().id();
+                  String publicIpAddressName = Iterables.getLast(Splitter.on("/").split(publicIpId));
+                  // TODO deallocate first?
+                  api.getPublicIPAddressApi(group).delete(publicIpAddressName);
+                  // TODO waitForJob
+               }
+            }
+         }
+      }
+      return true;
+   }
+}
+         /*
          if (uri != null) {
             boolean jobDone = nodeTerminated.apply(uri);
             boolean storageAcctDeleteStatus = false;
@@ -127,14 +153,4 @@ public class CleanupResources implements Function<String, Boolean> {
                } else {
                   return false;
                }
-            } else {
-               return false;
-            }
-         } else {
-            return false;
-         }
-      } else {
-         return false;
-      }
-   }
-}
+               */

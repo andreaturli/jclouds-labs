@@ -125,7 +125,7 @@ public class VirtualMachineApiLiveTest extends BaseAzureComputeApiLiveTest {
       }, 60 * 20 * 1000).apply(vmName);
       assertTrue(jobDone, "create operation did not complete in the configured timeout");
 
-      String status = api().get(vmName).properties().provisioningState();
+      VirtualMachineProperties.ProvisioningState status = api().get(vmName).properties().provisioningState();
       // Cannot be creating anymore. Should be succeeded or running but not failed.
       assertTrue(!status.equals("Creating"));
       assertTrue(!status.equals("Failed"));
@@ -245,7 +245,7 @@ public class VirtualMachineApiLiveTest extends BaseAzureComputeApiLiveTest {
               DiagnosticsProfile.BootDiagnostics.create(true, blob);
       DiagnosticsProfile diagnosticsProfile = DiagnosticsProfile.create(bootDiagnostics);
       VirtualMachineProperties properties = VirtualMachineProperties.create(null,
-              null, null, hwProf, storageProfile, osProfile, networkProfile, diagnosticsProfile, "Creating");
+              null, null, hwProf, storageProfile, osProfile, networkProfile, diagnosticsProfile, VirtualMachineProperties.ProvisioningState.CREATING);
       return properties;
    }
 

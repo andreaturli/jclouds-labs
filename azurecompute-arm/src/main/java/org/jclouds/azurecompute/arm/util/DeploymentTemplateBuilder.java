@@ -16,10 +16,6 @@
  */
 package org.jclouds.azurecompute.arm.util;
 
-import static com.google.common.io.BaseEncoding.base64;
-import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,6 +65,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+
+import static com.google.common.io.BaseEncoding.base64;
+import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
+import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
 
 public class DeploymentTemplateBuilder {
    public interface Factory {
@@ -522,7 +522,7 @@ public class DeploymentTemplateBuilder {
     * If sanitized name is less than 3 characters, storage account is sanitized name plus 4 random chars.
     * If sanitized name is more than 24 characters, storage account is first 10 chars of sanitized name plus 4 random chars plus last 10 chars of sanitized name.
     */
-   private static String generateStorageAccountName(String name) {
+   public static String generateStorageAccountName(String name) {
       String storageAccountName = name.replaceAll("[^a-z0-9]", "");
       int nameLength = storageAccountName.length();
       if (nameLength >= 3 && nameLength <= 24) {
