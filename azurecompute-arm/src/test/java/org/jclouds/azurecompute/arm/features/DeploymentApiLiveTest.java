@@ -22,12 +22,9 @@ import java.util.List;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.domain.Deployment;
 import org.jclouds.azurecompute.arm.domain.Deployment.ProvisioningState;
-import org.jclouds.azurecompute.arm.domain.DeploymentBody;
-import org.jclouds.azurecompute.arm.domain.DeploymentProperties;
 import org.jclouds.azurecompute.arm.domain.Subnet;
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.azurecompute.arm.internal.BaseAzureComputeApiLiveTest;
-import org.jclouds.azurecompute.arm.util.DeploymentTemplateBuilder;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.Image;
@@ -137,12 +134,6 @@ public class DeploymentApiLiveTest extends BaseAzureComputeApiLiveTest {
       return new TemplateImpl(image, hardware, region, options);
    }
 
-   private DeploymentTemplateBuilder getDeploymentTemplateBuilderWithOptions(TemplateOptions options) {
-      Template template = getTemplate(options);
-      DeploymentTemplateBuilder templateBuilder = api.deploymentTemplateFactory().create(resourceGroupName, deploymentName, template);
-      return templateBuilder;
-   }
-
    @Test
    public void testValidate(){
       Deployment deploymentInvalid = null;
@@ -168,12 +159,40 @@ public class DeploymentApiLiveTest extends BaseAzureComputeApiLiveTest {
       AzureTemplateOptions options = new AzureTemplateOptions();
       options.authorizePublicKey(rsakey);
       options.subnetId(subnetId);
-      DeploymentTemplateBuilder templateBuilder = getDeploymentTemplateBuilderWithOptions(options);
-      DeploymentBody deploymentTemplateBody = templateBuilder.getDeploymentTemplate();
 
-      DeploymentProperties properties = DeploymentProperties.create(deploymentTemplateBody);
-
-      String deploymentTemplate = templateBuilder.getDeploymentTemplateJson(properties);
+      String deploymentTemplate = "{\n" +
+              "  \"id\": \"/subscriptions/04f7ec88-8e28-41ed-8537-5e17766001f5/resourceGroups/jims216group/providers/Microsoft.Resources/deployments/jcdep1458344383064\",\n" +
+              "  \"name\": \"jcdep1458344383064\",\n" +
+              "  \"properties\": {\n" +
+              "    \"parameters\": {\n" +
+              "      \"newStorageAccountName\": {\n" +
+              "        \"type\": \"String\",\n" +
+              "        \"value\": \"jcres1458344383064\"\n" +
+              "      },\n" +
+              "      \"storageAccountType\": {\n" +
+              "        \"type\": \"String\",\n" +
+              "        \"value\": \"Standard_LRS\"\n" +
+              "      },\n" +
+              "      \"location\": {\n" +
+              "        \"type\": \"String\",\n" +
+              "        \"value\": \"West US\"\n" +
+              "      }\n" +
+              "    },\n" +
+              "    \"mode\": \"Incremental\",\n" +
+              "    \"provisioningState\": \"Accepted\",\n" +
+              "    \"timestamp\": \"2016-03-18T23:39:47.3048037Z\",\n" +
+              "    \"duration\": \"PT2.4433028S\",\n" +
+              "    \"correlationId\": \"8dee9711-8632-4948-9fe6-368bb75e6438\",\n" +
+              "    \"providers\": [{\n" +
+              "      \"namespace\": \"Microsoft.Storage\",\n" +
+              "      \"resourceTypes\": [{\n" +
+              "        \"resourceType\": \"storageAccounts\",\n" +
+              "        \"locations\": [\"westus\"]\n" +
+              "      }]\n" +
+              "    }],\n" +
+              "    \"dependencies\": []\n" +
+              "  }\n" +
+              "}";
       deploymentTemplate = UrlEscapers.urlFormParameterEscaper().escape(deploymentTemplate);
 
       Deployment deploymentValid = api().validate(deploymentName, deploymentTemplate);

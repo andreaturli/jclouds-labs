@@ -390,21 +390,6 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
    @Override
    public Iterable<VirtualMachine> listNodes() {
       return api.getVirtualMachineApi(azureGroup).list();
-      /*
-      return FluentIterable.from(api.getDeploymentApi(azureGroup).list())
-              .filter(isDeploymentInRegions)
-              .filter(new Predicate<Deployment>() {
-                 @Override
-                 public boolean apply(Deployment deployment) {
-                    Value storageAccountNameValue = deployment.properties().parameters().get("storageAccountName");
-                    String storageAccountName = storageAccountNameValue.value();
-                    String key = api.getStorageAccountApi(azureGroup).getKeys(storageAccountName).key1();
-                    return !BlobHelper.customImageExists(storageAccountName, key);
-                 }
-              })
-              .transform(deploymentToVMDeployment)
-              .toList();
-       */              
    }
 
    @Override

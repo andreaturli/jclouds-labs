@@ -17,7 +17,6 @@
 package org.jclouds.azurecompute.arm;
 
 import org.jclouds.azurecompute.arm.features.DeploymentApi;
-import org.jclouds.azurecompute.arm.util.DeploymentTemplateBuilder;
 import org.jclouds.azurecompute.arm.features.JobApi;
 import org.jclouds.azurecompute.arm.features.LocationApi;
 import org.jclouds.azurecompute.arm.features.NetworkInterfaceCardApi;
@@ -165,6 +164,4 @@ public interface AzureComputeApi extends Closeable {
    @Delegate
    ResourceProviderApi getResourceProviderApi();
 
-   @Provides
-   DeploymentTemplateBuilder.Factory deploymentTemplateFactory();
 }
