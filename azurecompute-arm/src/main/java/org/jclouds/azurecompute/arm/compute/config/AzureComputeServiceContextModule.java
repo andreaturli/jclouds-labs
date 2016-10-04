@@ -75,6 +75,7 @@ import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TCP_RUL
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TCP_RULE_REGEXP;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TIMEOUT_RESOURCE_DELETED;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_IMAGE_AVAILABLE;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
 import static org.jclouds.util.Predicates2.retry;
@@ -95,10 +96,6 @@ public class AzureComputeServiceContextModule
       }).to(VMImageToImage.class);
       bind(new TypeLiteral<Function<VMHardware, Hardware>>() {
       }).to(VMHardwareToHardware.class);
-      /*
-      bind(new TypeLiteral<Function<VMDeployment, NodeMetadata>>() {
-      }).to(DeploymentToNodeMetadata.class);
-      */
       bind(new TypeLiteral<Function<VirtualMachine, NodeMetadata>>() {
       }).to(VirtualMachineToNodeMetadata.class);
       bind(new TypeLiteral<Function<Location, org.jclouds.domain.Location>>() {
@@ -199,6 +196,13 @@ public class AzureComputeServiceContextModule
    }
 
    @Provides
+   @com.google.inject.name.Named(TIMEOUT_NODE_RUNNING)
+   protected Predicate<String> provideVirtualMachineRunningPredicate(final AzureComputeApi api, String resourceGroupName, Timeouts timeouts, PollPeriod pollPeriod) {
+      return retry(new VirtualMachineInStatePredicate(api, resourceGroupName, VirtualMachineInstance.VirtualMachineStatus.create("PowerState/running", "Info", "VM running", null)), timeouts.nodeRunning,
+              pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
+   }
+   
+   @Provides
    @Named(TIMEOUT_NODE_TERMINATED)
    protected Predicate<URI> provideNodeTerminatedPredicate(final AzureComputeApi api, Timeouts timeouts, PollPeriod pollPeriod) {
       return retry(new ActionDonePredicate(api), timeouts.nodeTerminated, pollPeriod.pollInitialPeriod,
@@ -259,6 +263,29 @@ public class AzureComputeServiceContextModule
          if (api.getJobApi().jobStatus(uri) != ParseJobStatus.JobStatus.DONE) return false;
          List<ResourceDefinition> definitions = api.getJobApi().captureStatus(uri);
          return definitions != null;
+      }
+   }
+
+   @VisibleForTesting
+   static class VirtualMachineInStatePredicate implements Predicate<String> {
+
+      private final AzureComputeApi api;
+      private final String azureGroup;
+      private final VirtualMachineInstance.VirtualMachineStatus status;
+
+      public VirtualMachineInStatePredicate(AzureComputeApi api, String azureGroup, VirtualMachineInstance.VirtualMachineStatus status) {
+         this.api = checkNotNull(api, "api must not be null");
+         this.azureGroup = checkNotNull(azureGroup, "azuregroup must not be null");
+         this.status = status;
+      }
+
+      @Override
+      public boolean apply(String name) {
+         checkNotNull(name, "name cannot be null");
+         VirtualMachineInstance virtualMachineInstance = api.getVirtualMachineApi(this.azureGroup).getInstanceDetails(name);
+         if (virtualMachineInstance == null) return false;
+         List<VirtualMachineInstance.VirtualMachineStatus> statuses = virtualMachineInstance.statuses();
+         return status.equals("VM stopped");
       }
    }
 

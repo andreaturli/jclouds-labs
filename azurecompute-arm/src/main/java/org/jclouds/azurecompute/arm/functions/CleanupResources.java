@@ -16,7 +16,11 @@
  */
 package  org.jclouds.azurecompute.arm.functions;
 
+import autovalue.shaded.com.google.common.common.collect.Lists;
+
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -24,133 +28,162 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
-import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule;
 import org.jclouds.azurecompute.arm.domain.IdReference;
-import org.jclouds.azurecompute.arm.domain.IpConfiguration;
-import org.jclouds.azurecompute.arm.domain.NetworkInterfaceCard;
+import org.jclouds.azurecompute.arm.domain.ResourceGroup;
+import org.jclouds.azurecompute.arm.domain.Subnet;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
+import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.logging.Logger;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TIMEOUT_RESOURCE_DELETED;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
 
 @Singleton
 public class CleanupResources implements Function<String, Boolean> {
 
-   private final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants;
    @Resource
    @Named(ComputeServiceConstants.COMPUTE_LOGGER)
    protected Logger logger = Logger.NULL;
 
    protected final AzureComputeApi api;
-   private Predicate<URI> nodeTerminated;
    private Predicate<URI> resourceDeleted;
 
    @Inject
-   public CleanupResources(AzureComputeApi azureComputeApi,
-                           AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants,
-                           @Named(TIMEOUT_NODE_TERMINATED) Predicate<URI> nodeTerminated,
-                           @Named(TIMEOUT_RESOURCE_DELETED) Predicate<URI> resourceDeleted) {
-      this.azureComputeConstants = azureComputeConstants;
+   public CleanupResources(AzureComputeApi azureComputeApi, @Named(TIMEOUT_RESOURCE_DELETED) Predicate<URI> resourceDeleted) {
       this.api = azureComputeApi;
-      this.nodeTerminated = nodeTerminated;
       this.resourceDeleted = resourceDeleted;
    }
 
    @Override
-   public Boolean apply(String id) {
-
+   public Boolean apply(final String id) {
       logger.debug("Destroying %s ...", id);
-      String storageAccountName = id.replaceAll("[^A-Za-z0-9 ]", "") + "stor";
-      String group = azureComputeConstants.azureResourceGroup();
 
-      VirtualMachine vm = api.getVirtualMachineApi(group).get(id);
+      Map<String, VirtualMachine> resourceGroupNamesAndVirtualMachines = getResourceGroupNamesAndVirtualMachines(id);
+      if (resourceGroupNamesAndVirtualMachines.isEmpty()) return true;
+      String group = checkNotNull(resourceGroupNamesAndVirtualMachines.entrySet().iterator().next().getKey(), "resourceGroup name must not be null");
+      VirtualMachine virtualMachine = checkNotNull(resourceGroupNamesAndVirtualMachines.get(group), "virtualMachine must not be null");
+      boolean vmDeleted = deleteVirtualMachine(group, virtualMachine);
+      // delete networkCardInterfaces
+      List<String> nics = getNetworkCardInterfaceNames(virtualMachine);
+      for (String nicName : nics) {
+         URI nicDeletionURI = api.getNetworkInterfaceCardApi(group).delete(nicName);
+         // todo is a collection!
+         boolean nicDeleted = resourceDeleted.apply(nicDeletionURI);
+      }
+      // delete virtual networks
+      for (VirtualNetwork virtualNetwork : api.getVirtualNetworkApi(group).list()) {
+         for (Subnet subnet : virtualNetwork.properties().subnets()) {
+            // delete subnets
+            api.getSubnetApi(group, virtualNetwork.name()).delete(subnet.name());
+         }
+         // todo is a collection!
+         boolean virtualNetworkDeleted = api.getVirtualNetworkApi(group).delete(virtualNetwork.name());
+      }
+      // delete storage account
+      String storageAccountNameURI = virtualMachine.properties().storageProfile().osDisk().vhd().uri();
+      boolean storageAccountDeleted = api.getStorageAccountApi(group).delete(Iterables.get(Splitter.on(".").split(URI.create(storageAccountNameURI).getHost()), 0));
 
-      if (vm != null) {
-         URI uri = api.getVirtualMachineApi(group).delete(id);
-         nodeTerminated.apply(uri);
+      // delete resource group if empty
+      if (api.getVirtualMachineApi(group).list().isEmpty() &&
+              api.getVirtualNetworkApi(group).list().isEmpty() &&
+              api.getStorageAccountApi(group).list().isEmpty() &&
+              api.getNetworkInterfaceCardApi(group).list().isEmpty()) {
+         boolean resourceGroupDeleted = resourceDeleted.apply(api.getResourceGroupApi().delete(group));
+      }
+      return vmDeleted;
+   }
 
-         for (IdReference idReference : vm.properties().networkProfile().networkInterfaces()) {
-            String nicName = Iterables.getLast(Splitter.on("/").split(idReference.id()));
-            NetworkInterfaceCard networkInterfaceCard = api.getNetworkInterfaceCardApi(group).get(nicName);
+   private List<String> getNetworkCardInterfaceNames(VirtualMachine virtualMachine) {
+      List<String> nics = Lists.newArrayList();
+      for (IdReference idReference : virtualMachine.properties().networkProfile().networkInterfaces()) {
+         nics.add(Iterables.getLast(Splitter.on("/").split(idReference.id())));
+      }
+      return nics;
+   }
 
-            api.getNetworkInterfaceCardApi(group).delete(nicName);
-            // TODO waitForJob
+   private boolean deleteVirtualMachine(String group, VirtualMachine virtualMachine) {
+      return resourceDeleted.apply(api.getVirtualMachineApi(group).delete(virtualMachine.name()));
+   }
 
-            for (IpConfiguration ipConfiguration : networkInterfaceCard.properties().ipConfigurations()) {
-               if (ipConfiguration.properties().publicIPAddress() != null) {
-                  String publicIpId = ipConfiguration.properties().publicIPAddress().id();
-                  String publicIpAddressName = Iterables.getLast(Splitter.on("/").split(publicIpId));
-                  // TODO deallocate first?
-                  api.getPublicIPAddressApi(group).delete(publicIpAddressName);
-                  // TODO waitForJob
-               }
-            }
+   private Map<String, VirtualMachine> getResourceGroupNamesAndVirtualMachines(String id) {
+      for (ResourceGroup resourceGroup : api.getResourceGroupApi().list()) {
+         String group = resourceGroup.name();
+         VirtualMachine virtualMachine = api.getVirtualMachineApi(group).get(id);
+         if (virtualMachine != null) {
+            return ImmutableMap.of(group, virtualMachine);
          }
       }
-      return true;
+      return Maps.newHashMap();
    }
 }
-         /*
-         if (uri != null) {
-            boolean jobDone = nodeTerminated.apply(uri);
-            boolean storageAcctDeleteStatus = false;
-            boolean deploymentDeleteStatus = false;
-
-            if (jobDone) {
-               Deployment deployment = api.getDeploymentApi(group).get(id);
-               if (deployment != null) {
-                  uri = api.getDeploymentApi(group).delete(id);
-                  jobDone = resourceDeleted.apply(uri);
-                  if (jobDone) {
-                     deploymentDeleteStatus = true;
+      
+/*      
+      for (ResourceGroup resourceGroup : api.getResourceGroupApi().list()) {
+         String group = resourceGroup.name();
+         VirtualMachine virtualMachine = api.getVirtualMachineApi(group).get(id);
+         if (virtualMachine != null) {
+            vmDeleted = resourceDeleted.apply(api.getVirtualMachineApi(group).delete(id));
+            for (IdReference idReference : virtualMachine.properties().networkProfile().networkInterfaces()) {
+               String nicName = Iterables.getLast(Splitter.on("/").split(idReference.id()));
+               NetworkInterfaceCard networkInterfaceCard = api.getNetworkInterfaceCardApi(group).get(nicName);
+               URI nicDeletionURI = api.getNetworkInterfaceCardApi(group).delete(nicName);
+               nicDeleted = resourceDeleted.apply(nicDeletionURI);
+               for (IpConfiguration ipConfiguration : networkInterfaceCard.properties().ipConfigurations()) {
+                  if (ipConfiguration.properties().publicIPAddress() != null) {
+                     String publicIpId = ipConfiguration.properties().publicIPAddress().id();
+                     String publicIpAddressName = Iterables.getLast(Splitter.on("/").split(publicIpId));
+                     publicIpAddressDeleted = api.getPublicIPAddressApi(group).delete(publicIpAddressName);
                   }
-               } else {
-                  deploymentDeleteStatus = true;
                }
-               NetworkInterfaceCard nic = api.getNetworkInterfaceCardApi(group).get(id + "nic");
-               if (nic != null) {
-                  uri = api.getNetworkInterfaceCardApi(group).delete(id + "nic");
-                  if (uri != null) {
-                     jobDone = resourceDeleted.apply(uri);
-                     if (jobDone) {
-                        boolean ipDeleteStatus = false;
-                        PublicIPAddress ip = api.getPublicIPAddressApi(group).get(id + "publicip");
-                        if (ip != null) {
-                           ipDeleteStatus = api.getPublicIPAddressApi(group).delete(id + "publicip");
-                        } else {
-                           ipDeleteStatus = true;
-                        }
-
-                        // Get NSG
-                        boolean nsgDeleteStatus = false;
-                        NetworkSecurityGroup nsg = api.getNetworkSecurityGroupApi(group).get(id + "nsg");
-                        if (nsg != null) {
-                           uri = api.getNetworkSecurityGroupApi(group).delete(id + "nsg");
-                           jobDone = resourceDeleted.apply(uri);
-                           if (jobDone) {
-                              nsgDeleteStatus = true;
-
-                           }
-                        }
-                        else {
-                           nsgDeleteStatus = true;
-                        }
-
-                        return deploymentDeleteStatus && storageAcctDeleteStatus && ipDeleteStatus && nsgDeleteStatus;
-                     } else {
-                        return false;
-                     }
-                  } else {
-                     return false;
-                  }
-               } else {
-                  return false;
+            }
+            for (VirtualNetwork virtualNetwork : api.getVirtualNetworkApi(group).list()) {
+               for (Subnet subnet : virtualNetwork.properties().subnets()) {
+                  api.getSubnetApi(group, virtualNetwork.name()).delete(subnet.name());
                }
-               */
+               virtualNetworkDeleted = api.getVirtualNetworkApi(group).delete(virtualNetwork.name());
+            }
+            String storageAccountNameURI = virtualMachine.properties().storageProfile().osDisk().vhd().uri();
+            storageAccountDeleted = api.getStorageAccountApi(group).delete(Iterables.get(Splitter.on(".").split(URI.create(storageAccountNameURI).getHost()), 0));
+         }
+         if (api.getVirtualMachineApi(group).list().isEmpty() &&
+                 api.getVirtualNetworkApi(group).list().isEmpty() &&
+                 api.getStorageAccountApi(group).list().isEmpty() &&
+                 api.getNetworkInterfaceCardApi(group).list().isEmpty()) {
+            resourceGroupDeleted = resourceDeleted.apply(api.getResourceGroupApi().delete(group));
+         }
+      }
+      return vmDeleted && nicDeleted && publicIpAddressDeleted && virtualNetworkDeleted && storageAccountDeleted && resourceGroupDeleted;
+   }
+
+   private List<String> getNetworkCardInterfaceNames(VirtualMachine virtualMachine) {
+      List<String> nics = Lists.newArrayList();
+      for (IdReference idReference : virtualMachine.properties().networkProfile().networkInterfaces()) {
+         nics.add(Iterables.getLast(Splitter.on("/").split(idReference.id())));
+      }
+      return nics;
+   }
+
+   private boolean deleteVirtualMachine(String group, VirtualMachine virtualMachine) {
+      return resourceDeleted.apply(api.getVirtualMachineApi(group).delete(virtualMachine.name()));
+   }
+
+   private Map<String, VirtualMachine> getResourceGroupNamesAndVirtualMachines(String id) {
+      for (ResourceGroup resourceGroup : api.getResourceGroupApi().list()) {
+         String group = resourceGroup.name();
+         VirtualMachine virtualMachine = api.getVirtualMachineApi(group).get(id);
+         if (virtualMachine != null) {
+            return ImmutableMap.of(group, virtualMachine);
+         }
+      }
+      return Maps.newHashMap();
+   }
+}
+*/

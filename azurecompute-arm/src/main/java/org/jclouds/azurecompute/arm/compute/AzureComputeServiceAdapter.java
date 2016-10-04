@@ -29,10 +29,8 @@ import javax.inject.Singleton;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule.AzureComputeConstants;
-import org.jclouds.azurecompute.arm.compute.functions.DeploymentToVMDeployment;
 import org.jclouds.azurecompute.arm.compute.functions.VMImageToImage;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
-import org.jclouds.azurecompute.arm.compute.predicates.IsDeploymentInRegions;
 import org.jclouds.azurecompute.arm.domain.DataDisk;
 import org.jclouds.azurecompute.arm.domain.HardwareProfile;
 import org.jclouds.azurecompute.arm.domain.IdReference;
@@ -88,6 +86,7 @@ import com.google.common.collect.Sets;
 
 import static com.google.common.base.Preconditions.checkState;
 import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
 import static org.jclouds.util.Predicates2.retry;
 
 /**
@@ -106,23 +105,22 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
    private final AzureComputeApi api;
    private final AzureComputeConstants azureComputeConstants;
    private final Supplier<Set<String>> regionIds;
-   private final IsDeploymentInRegions isDeploymentInRegions;
-   private final DeploymentToVMDeployment deploymentToVMDeployment;
+   private final Predicate<String> nodeRunningPredicate;
 
    @Inject
    AzureComputeServiceAdapter(final AzureComputeApi api, final AzureComputeConstants azureComputeConstants,
          CleanupResources cleanupResources, @Region Supplier<Set<String>> regionIds,
-         IsDeploymentInRegions isDeploymentInRegions, DeploymentToVMDeployment deploymentToVMDeployment) {
+                              @Named(TIMEOUT_NODE_RUNNING) Predicate<String> nodeRunningPredicate) {
       this.api = api;
       this.azureComputeConstants = azureComputeConstants;
+      // TODO remove this constant, use `group`
       this.azureGroup = azureComputeConstants.azureResourceGroup();
 
       logger.debug("AzureComputeServiceAdapter set azuregroup to: " + azureGroup);
 
       this.cleanupResources = cleanupResources;
       this.regionIds = regionIds;
-      this.isDeploymentInRegions = isDeploymentInRegions;
-      this.deploymentToVMDeployment = deploymentToVMDeployment;
+      this.nodeRunningPredicate = nodeRunningPredicate;
    }
 
    @Override
@@ -177,7 +175,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       String networkInterfaceCardName = "jc-nic-" + name;
       NetworkInterfaceCard nic = api.getNetworkInterfaceCardApi(azureGroup).createOrUpdate(networkInterfaceCardName, locationName, networkInterfaceCardProperties, ImmutableMap.of("jclouds", "livetest"));
       
-      // StorageAccount
+      // TODO move storageAccount to CreateResourceGroupThenCreateNodes
       String storageAccountName = null;
       String imageName = template.getImage().getName();
       if (imageName.startsWith(CUSTOM_IMAGE_PREFIX)) {
@@ -227,46 +225,8 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       VirtualMachine virtualMachine = api.getVirtualMachineApi(azureGroup).create(name, template.getLocation().getId(), virtualMachineProperties);
 
       //Poll until resource is ready to be used
-      retry(new Predicate<String>() {
-         @Override
-         public boolean apply(String name) {
-            return api.getVirtualMachineApi(azureGroup).get(name).properties().provisioningState() != VirtualMachineProperties.ProvisioningState.SUCCEEDED;
-         }
-      }, 60 * 20 * 1000).apply(name);
+      nodeRunningPredicate.apply(virtualMachine.name());
 
-      VirtualMachineProperties.ProvisioningState status = api.getVirtualMachineApi(azureGroup).get(name).properties().provisioningState();
-      /*
-      DeploymentTemplateBuilder deploymentTemplateBuilder = api.deploymentTemplateFactory().create(group, name, template);
-      DeploymentBody deploymentTemplateBody = deploymentTemplateBuilder.getDeploymentTemplate();
-      DeploymentProperties properties = DeploymentProperties.create(deploymentTemplateBody);
-      final String deploymentTemplate = UrlEscapers.urlFormParameterEscaper().escape(deploymentTemplateBuilder.getDeploymentTemplateJson(properties));
-
-      logger.debug("Deployment created with name: %s group: %s", name, group);
-
-      Deployment deployment = api.getDeploymentApi(azureGroup).create(name, deploymentTemplate);
-      if (!retry(new Predicate<String>() {
-         @Override
-         public boolean apply(final String name) {
-            Deployment deployment = api.getDeploymentApi(azureGroup).get(name);
-            if (deployment == null) return false;
-            Deployment.ProvisioningState state = Deployment.ProvisioningState.fromValue(deployment.properties().provisioningState());
-            if (state == Deployment.ProvisioningState.FAILED) {
-               logger.error(String.format("Deployment %s failed", deployment));
-               cleanupResources.apply(name);
-               throw new IllegalStateException(String.format("Deployment %s failed", deployment));
-            }
-            return state == Deployment.ProvisioningState.SUCCEEDED;
-         }
-      }, azureComputeConstants.operationTimeout(), 1, SECONDS).apply(deployment.name())) {
-         final String illegalStateExceptionMessage = format("Deployment %s was not created within %sms so it will be destroyed.",
-                 name, azureComputeConstants.operationTimeout());
-         logger.warn(illegalStateExceptionMessage);
-         cleanupResources.apply(name);
-         throw new IllegalStateException(illegalStateExceptionMessage);
-      }
-
-      VMDeployment vmDeployment = deploymentToVMDeployment.apply(api.getDeploymentApi(azureGroup).get(name));
-*/      
       // Safe to pass null credentials here, as jclouds will default populate the node with the default credentials from the image, or the ones in the options, if provided.
       return new NodeAndInitialCredentials<VirtualMachine>(virtualMachine, name, null);
    }
