@@ -105,7 +105,7 @@ public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
 
    @Override
    protected Template buildTemplate(TemplateBuilder templateBuilder) {
-      Template template = templateBuilder.build();
+      Template template = templateBuilder.imageVersionMatches("16.04.0-LTS").build();
       AzureTemplateOptions options = template.getOptions().as(AzureTemplateOptions.class);
       options.authorizePublicKey("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNnvPZ25wZK19grrbal6R5JP1hLRBUuNh86KxZVMAFkGd5ouVSgO9dFajHZ45Q4mbaTkdOiqf7otMLDzkaztEa7oLK7Jso0Y0LOi+nT4gf38rvbEF5mq069G9b9XqlNleaGnpLuTN54iEK8c4TWZxIJqgelHEHhjp7V1asmilBbpZDmwA5cTt9vGJIhqA/BptKH3folZKeAQjRa1ZRSwSQUnk9rBKn4PKSRDojVa9A9jKt4qboJh5q7ZjtE8z+665F/4TgLzElTXUA8+uUFGpuynMSmQEt301e18dXAl+vBr8fMiThcoVVbdVdqdjXsw75fMXPAgqhjrw8k3+0/4P9 andrea@bigmac.local");
       return template;

@@ -21,6 +21,8 @@ package org.jclouds.azurecompute.arm.config;
  */
 public class AzureComputeProperties {
 
+   public static final String STORAGE_API_VERSION = "2015-06-15";
+
    public static final String OPERATION_TIMEOUT = "jclouds.azurecompute.arm.operation.timeout";
 
    public static final String OPERATION_POLL_INITIAL_PERIOD = "jclouds.azurecompute.arm.operation.poll.initial.period";
@@ -30,8 +32,6 @@ public class AzureComputeProperties {
    public static final String TCP_RULE_FORMAT = "jclouds.azurecompute.arm.tcp.rule.format";
 
    public static final String TCP_RULE_REGEXP = "jclouds.azurecompute.arm.tcp.rule.regexp";
-
-   public static final String STORAGE_API_VERSION = "2015-06-15";
 
    public static final String RESOURCE_GROUP_NAME = "jclouds.azurecompute.arm.operation.resourcegroup";
 

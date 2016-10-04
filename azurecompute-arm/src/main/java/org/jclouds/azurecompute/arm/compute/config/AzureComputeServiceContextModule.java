@@ -38,7 +38,7 @@ import org.jclouds.azurecompute.arm.domain.ResourceDefinition;
 import org.jclouds.azurecompute.arm.domain.VMHardware;
 import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
-import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
+import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties.ProvisioningState;
 import org.jclouds.azurecompute.arm.functions.ParseJobStatus;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceAdapter;
@@ -197,8 +197,9 @@ public class AzureComputeServiceContextModule
 
    @Provides
    @com.google.inject.name.Named(TIMEOUT_NODE_RUNNING)
-   protected Predicate<String> provideVirtualMachineRunningPredicate(final AzureComputeApi api, String resourceGroupName, Timeouts timeouts, PollPeriod pollPeriod) {
-      return retry(new VirtualMachineInStatePredicate(api, resourceGroupName, VirtualMachineInstance.VirtualMachineStatus.create("PowerState/running", "Info", "VM running", null)), timeouts.nodeRunning,
+   protected Predicate<String> provideVirtualMachineRunningPredicate(final AzureComputeApi api, final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants, Timeouts timeouts, PollPeriod pollPeriod) {
+      String azureGroup = azureComputeConstants.azureResourceGroup();
+      return retry(new VirtualMachineInStatePredicate(api, azureGroup, ProvisioningState.SUCCEEDED), timeouts.nodeRunning,
               pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
    }
    
@@ -228,7 +229,8 @@ public class AzureComputeServiceContextModule
    protected Predicate<String> provideNodeSuspendedPredicate(final AzureComputeApi api, final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants,
                                                              Timeouts timeouts, PollPeriod pollPeriod) {
       String azureGroup = azureComputeConstants.azureResourceGroup();
-      return retry(new NodeSuspendedPredicate(api, azureGroup), timeouts.nodeSuspended, pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
+      return retry(new VirtualMachineInStatePredicate(api, azureGroup, ProvisioningState.DELETED), timeouts.nodeTerminated,
+              pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
    }
 
    @VisibleForTesting
@@ -271,49 +273,22 @@ public class AzureComputeServiceContextModule
 
       private final AzureComputeApi api;
       private final String azureGroup;
-      private final VirtualMachineInstance.VirtualMachineStatus status;
+      private final ProvisioningState provisioningState;
 
-      public VirtualMachineInStatePredicate(AzureComputeApi api, String azureGroup, VirtualMachineInstance.VirtualMachineStatus status) {
+      public VirtualMachineInStatePredicate(AzureComputeApi api, String azureGroup, ProvisioningState provisioningState) {
          this.api = checkNotNull(api, "api must not be null");
          this.azureGroup = checkNotNull(azureGroup, "azuregroup must not be null");
-         this.status = status;
+         this.provisioningState = provisioningState;
       }
 
       @Override
       public boolean apply(String name) {
          checkNotNull(name, "name cannot be null");
-         VirtualMachineInstance virtualMachineInstance = api.getVirtualMachineApi(this.azureGroup).getInstanceDetails(name);
-         if (virtualMachineInstance == null) return false;
-         List<VirtualMachineInstance.VirtualMachineStatus> statuses = virtualMachineInstance.statuses();
-         return status.equals("VM stopped");
+         VirtualMachine virtualMachine = api.getVirtualMachineApi(this.azureGroup).get(name);
+         if (virtualMachine == null) return false;
+         ProvisioningState state = virtualMachine.properties().provisioningState();
+         return state == provisioningState;
       }
    }
 
-   @VisibleForTesting
-   static class NodeSuspendedPredicate implements Predicate<String> {
-
-      private final AzureComputeApi api;
-      private final String azureGroup;
-
-      public NodeSuspendedPredicate(AzureComputeApi api, String azureGroup) {
-         this.api = checkNotNull(api, "api must not be null");
-         this.azureGroup = checkNotNull(azureGroup, "azuregroup must not be null");
-      }
-
-      @Override
-      public boolean apply(String name) {
-         checkNotNull(name, "name cannot be null");
-         String status = "";
-         VirtualMachineInstance virtualMachineInstance = api.getVirtualMachineApi(this.azureGroup).getInstanceDetails(name);
-         if (virtualMachineInstance == null) return false;
-         List<VirtualMachineInstance.VirtualMachineStatus> statuses = virtualMachineInstance.statuses();
-         for (int c = 0; c < statuses.size(); c++) {
-            if (statuses.get(c).code().substring(0, 10).equals("PowerState")) {
-               status = statuses.get(c).displayStatus();
-               break;
-            }
-         }
-         return status.equals("VM stopped");
-      }
-   }
 }
