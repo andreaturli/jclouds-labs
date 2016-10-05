@@ -17,7 +17,8 @@
 package org.jclouds.azurecompute.arm.config;
 
 /**
- * Configuration properties and constants used in Azure Resource Manager connections.
+ * Configuration properties and constants used in Azure Resource Manager
+ * connections.
  */
 public class AzureComputeProperties {
 
@@ -46,5 +47,7 @@ public class AzureComputeProperties {
    public static final String DEFAULT_SUBNET_ADDRESS_PREFIX = "jclouds.azurecompute.arm.subnet.addressprefix";
 
    public static final String DEFAULT_DATADISKSIZE = "jclouds.azurecompute.arm.datadisksize";
+
+   public static final String API_VERSION_PREFIX = "jclouds.azurecompute.arm.apiversion.";
 
 }

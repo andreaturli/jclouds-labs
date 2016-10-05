@@ -16,6 +16,10 @@
  */
 package org.jclouds.azurecompute.arm.features;
 
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+
 import java.net.URI;
 import java.util.List;
 
@@ -25,18 +29,6 @@ import org.jclouds.azurecompute.arm.domain.Deployment.ProvisioningState;
 import org.jclouds.azurecompute.arm.domain.Subnet;
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.azurecompute.arm.internal.BaseAzureComputeApiLiveTest;
-import org.jclouds.compute.domain.Hardware;
-import org.jclouds.compute.domain.HardwareBuilder;
-import org.jclouds.compute.domain.Image;
-import org.jclouds.compute.domain.ImageBuilder;
-import org.jclouds.compute.domain.OperatingSystem;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.Template;
-import org.jclouds.compute.domain.internal.TemplateImpl;
-import org.jclouds.compute.options.TemplateOptions;
-import org.jclouds.domain.Location;
-import org.jclouds.domain.LocationBuilder;
-import org.jclouds.domain.LocationScope;
 import org.jclouds.util.Predicates2;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -45,10 +37,6 @@ import org.testng.annotations.Test;
 
 import com.google.common.base.Predicate;
 import com.google.common.net.UrlEscapers;
-
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 @Test(testName = "DeploymentApiLiveTest", singleThreaded = true)
 public class DeploymentApiLiveTest extends BaseAzureComputeApiLiveTest {
@@ -107,31 +95,6 @@ public class DeploymentApiLiveTest extends BaseAzureComputeApiLiveTest {
               "  } " +
               "}";
       return body;
-   }
-
-   private Template getTemplate(TemplateOptions options) {
-      Location provider = (new LocationBuilder()).scope(LocationScope.PROVIDER).id("azurecompute-arm").description("azurecompute-arm").build();
-      Location region = (new LocationBuilder()).scope(LocationScope.REGION).id(LOCATION).description("West Europe").parent(provider).build();
-
-      OperatingSystem os = OperatingSystem.builder()
-              .family(OsFamily.UBUNTU)
-              .description("14.04.3-LTS")
-              .is64Bit(true)
-              .build();
-
-      Image image = (new ImageBuilder())
-              .id("UbuntuServer14.04.3-LTS")
-              .providerId("Canonical")
-              .name("UbuntuServer")
-              .description("14.04.3-LTS")
-              .version("14.04.3-LTS")
-              .operatingSystem(os)
-              .status(Image.Status.AVAILABLE)
-              .location(region)
-              .build();
-
-      Hardware hardware = (new HardwareBuilder()).id("Standard_A0").build();
-      return new TemplateImpl(image, hardware, region, options);
    }
 
    @Test

@@ -60,17 +60,21 @@ public class BaseAzureComputeApiMockTest {
    public void start() throws IOException {
       server = new MockWebServer();
       server.play();
-      Properties properties = new Properties();
-      properties.put(CREDENTIAL_TYPE, BEARER_TOKEN_CREDENTIALS.toString());
-      properties.put("oauth.endpoint", "https://login.microsoftonline.com/tenant-id/oauth2/token");
       AzureComputeProviderMetadata pm = AzureComputeProviderMetadata.builder().build();
       context = ContextBuilder.newBuilder(pm)
               .credentials("", MOCK_BEARER_TOKEN)
               .endpoint(server.getUrl("/").toString() + "subscriptions/SUBSCRIPTIONID")
               .modules(modules)
-              .overrides(properties)
+              .overrides(setupProperties())
               .build();
       api = context.getApi();
+   }
+   
+   protected Properties setupProperties() {
+      Properties properties = new Properties();
+      properties.put(CREDENTIAL_TYPE, BEARER_TOKEN_CREDENTIALS.toString());
+      properties.put("oauth.endpoint", "https://login.microsoftonline.com/tenant-id/oauth2/token");
+      return properties;
    }
 
    @AfterMethod(alwaysRun = true)

@@ -261,10 +261,6 @@ public class VirtualMachineApiLiveTest extends BaseAzureComputeApiLiveTest {
       return api.getNetworkInterfaceCardApi(resourceGroupName).createOrUpdate(networkInterfaceCardName, locationName, networkInterfaceCardProperties, tags);
    }
 
-   private boolean deleteStorageService(String resourceGroupName, String storageServiceName) {
-      return api.getStorageAccountApi(resourceGroupName).delete(storageServiceName);
-   }
-
    private boolean waitForState(String name, final String state, final String displayStatus) {
       return FluentIterable.from(api().getInstanceDetails(name).statuses())
               .filter(new Predicate<VirtualMachineInstance.VirtualMachineStatus>() {

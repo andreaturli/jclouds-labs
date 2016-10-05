@@ -34,6 +34,7 @@ import org.jclouds.Fallbacks;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties;
+import org.jclouds.azurecompute.arm.filters.ApiVersionFilter;
 import org.jclouds.azurecompute.arm.functions.URIParser;
 import org.jclouds.oauth.v2.filters.OAuthFilter;
 import org.jclouds.rest.annotations.Fallback;
@@ -52,7 +53,7 @@ import org.jclouds.rest.binders.BindToJsonPayload;
  * @see <a href="https://msdn.microsoft.com/en-us/library/azure/mt163630.aspx">docs</a>
  */
 @Path("/resourceGroups/{resourceGroup}/providers/Microsoft.Compute/virtualMachines")
-@RequestFilters(OAuthFilter.class)
+@RequestFilters({ OAuthFilter.class, ApiVersionFilter.class })
 @Consumes(MediaType.APPLICATION_JSON)
 public interface VirtualMachineApi {
 
@@ -62,7 +63,6 @@ public interface VirtualMachineApi {
    @Named("GetVirtualMachine")
    @GET
    @Path("/{name}")
-   @QueryParams(keys = "api-version", values = "2016-03-30")
    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
    VirtualMachine get(@PathParam("name") String name);
 
@@ -72,7 +72,6 @@ public interface VirtualMachineApi {
    @Named("GetVirtualMachineInstance")
    @GET
    @Path("/{name}/instanceView")
-   @QueryParams(keys = "api-version", values = "2016-03-30")
    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
    VirtualMachineInstance getInstanceDetails(@PathParam("name") String name);
    
@@ -84,7 +83,7 @@ public interface VirtualMachineApi {
    @Payload("%7B\"location\":\"{location}\",\"tags\":%7B%7D,\"properties\":{properties}%7D")
    @MapBinder(BindToJsonPayload.class)
    @Path("/{vmname}")
-   @QueryParams(keys = { "validating", "api-version"}, values = {"false", "2016-03-30"})
+   @QueryParams(keys = "validating", values = "false")
    @Produces(MediaType.APPLICATION_JSON)
    VirtualMachine create(@PathParam("vmname") String vmname,
                          @PayloadParam("location") String location,
@@ -97,7 +96,6 @@ public interface VirtualMachineApi {
    @GET
    @SelectJson("value")
    @Fallback(Fallbacks.EmptyListOnNotFoundOr404.class)
-   @QueryParams(keys = "api-version", values = "2016-06-01" )
    List<VirtualMachine> list();
 
    /**
@@ -107,7 +105,6 @@ public interface VirtualMachineApi {
    @DELETE
    @Path("/{name}")
    @ResponseParser(URIParser.class)
-   @QueryParams(keys = "api-version", values = "2016-03-30")
    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
    URI delete(@PathParam("name") String name);
 
