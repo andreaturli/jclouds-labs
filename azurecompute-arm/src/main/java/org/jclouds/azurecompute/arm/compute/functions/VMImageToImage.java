@@ -47,6 +47,7 @@ public class VMImageToImage implements Function<VMImage, Image> {
    private static final String SUSE = "SUSE";
    private static final String SQL_SERVER = "SQL Server";
    private static final String ORACLE_lINUX = "Oracle Linux";
+   private static final String RHEL = "RHEL";
 
    private final Supplier<Set<? extends org.jclouds.domain.Location>> locations;
 
@@ -150,6 +151,8 @@ public class VMImageToImage implements Function<VMImage, Image> {
                family = OsFamily.WINDOWS;
             } else if (label.contains(ORACLE_lINUX)) {
                family = OsFamily.OEL;
+            } else if (label.contains(RHEL)) {
+               family = OsFamily.RHEL;
             }
 
             String sku = image.sku();

@@ -20,7 +20,6 @@ import java.util.EnumSet;
 
 public class GetEnumValue {
 
-   @SuppressWarnings("unchecked")
    public static <T extends Enum<T>> Enum<T> fromValueOrDefault(String text, Enum<T> defaultValue) {
       if (text != null) {
          EnumSet<T> elements = EnumSet.allOf(defaultValue.getDeclaringClass());

@@ -94,9 +94,9 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.put(DEFAULT_DATADISKSIZE, "100");
       properties.put(IMAGE_PUBLISHERS, "Canonical,RedHat");
       // Default credentials for all images
-      properties.put(TEMPLATE, "osFamily=UBUNTU,os64Bit=true,osVersionMatches=16.04.0-LTS");
       properties.put(IMAGE_LOGIN_USER, "jclouds:Password12345!");
-      properties.put(IMAGE_AUTHENTICATE_SUDO, "true");      
+      properties.put(IMAGE_AUTHENTICATE_SUDO, "true");
+      properties.put(TEMPLATE, "imageNameMatches=UbuntuServer,osVersionMatches=1[45]\\.[01][04]\\.[0-9]-LTS");
       properties.put(TIMEOUT_NODE_TERMINATED, 60 * 10 * 1000);
       // Api versions used in each API
       properties.put(API_VERSION_PREFIX + DeploymentApi.class.getSimpleName(), "2016-02-01");

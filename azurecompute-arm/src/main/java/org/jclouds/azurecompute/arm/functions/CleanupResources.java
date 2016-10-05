@@ -16,8 +16,6 @@
  */
 package  org.jclouds.azurecompute.arm.functions;
 
-import autovalue.shaded.com.google.common.common.collect.Lists;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +39,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import static com.google.common.base.Preconditions.checkNotNull;

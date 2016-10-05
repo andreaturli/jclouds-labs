@@ -58,18 +58,19 @@ public class ApiVersionFilter implements HttpRequestFilter {
       checkArgument(request instanceof GeneratedHttpRequest,
             "This filter can only be applied to GeneratedHttpRequest objects");
       GeneratedHttpRequest generatedRequest = (GeneratedHttpRequest) request;
-      
+
       // Look if there is a custom api version for the current method
       String commandName = config.getCommandName(generatedRequest.getInvocation());
       String customApiVersion = versions.get(commandName);
-      
+
       if (customApiVersion == null) {
-         // No custom config for the specific method. Let's look for custom config for the class
+         // No custom config for the specific method. Let's look for custom
+         // config for the class
          Invokable<?, ?> invoked = generatedRequest.getInvocation().getInvokable();
          String className = invoked.getOwnerType().getRawType().getSimpleName();
          customApiVersion = versions.get(className);
       }
-      
+
       if (customApiVersion != null) {
          return request.toBuilder().replaceQueryParam("api-version", customApiVersion).build();
       }
@@ -77,8 +78,7 @@ public class ApiVersionFilter implements HttpRequestFilter {
       return request;
    }
 
-   private static final Map<String, String> versions(
-         Function<Predicate<String>, Map<String, String>> filterStringsBoundByName) {
+   private static Map<String, String> versions(Function<Predicate<String>, Map<String, String>> filterStringsBoundByName) {
       Map<String, String> stringBoundWithApiVersionPrefix = filterStringsBoundByName
             .apply(startsWith(API_VERSION_PREFIX));
       return transformKeys(stringBoundWithApiVersionPrefix, new Function<String, String>() {
