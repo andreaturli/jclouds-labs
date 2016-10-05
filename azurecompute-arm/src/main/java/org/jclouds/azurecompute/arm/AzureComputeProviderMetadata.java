@@ -29,6 +29,9 @@ import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.RESOURC
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.STORAGE_API_VERSION;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TCP_RULE_FORMAT;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.TCP_RULE_REGEXP;
+import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_AUTHENTICATE_SUDO;
+import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_LOGIN_USER;
+import static org.jclouds.compute.config.ComputeServiceProperties.TEMPLATE;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
 import static org.jclouds.oauth.v2.config.CredentialType.CLIENT_CREDENTIALS_SECRET;
 import static org.jclouds.oauth.v2.config.OAuthProperties.CREDENTIAL_TYPE;
@@ -91,8 +94,9 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.put(DEFAULT_DATADISKSIZE, "100");
       properties.put(IMAGE_PUBLISHERS, "Canonical,RedHat");
       // Default credentials for all images
-      properties.put("jclouds.image.login-user", "jclouds:Password1!");
-      properties.put("jclouds.image.authenticate-sudo", "true");      
+      properties.put(TEMPLATE, "osFamily=UBUNTU,os64Bit=true,osVersionMatches=16.04.0-LTS");
+      properties.put(IMAGE_LOGIN_USER, "jclouds:Password12345!");
+      properties.put(IMAGE_AUTHENTICATE_SUDO, "true");      
       properties.put(TIMEOUT_NODE_TERMINATED, 60 * 10 * 1000);
       // Api versions used in each API
       properties.put(API_VERSION_PREFIX + DeploymentApi.class.getSimpleName(), "2016-02-01");

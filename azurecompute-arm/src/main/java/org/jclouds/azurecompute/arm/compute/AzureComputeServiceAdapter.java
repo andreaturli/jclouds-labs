@@ -16,7 +16,6 @@
  */
 package org.jclouds.azurecompute.arm.compute;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +26,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
+import org.jclouds.azurecompute.arm.AzureComputeProviderMetadata;
 import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule.AzureComputeConstants;
 import org.jclouds.azurecompute.arm.compute.functions.VMImageToImage;
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
@@ -82,6 +82,9 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.contains;
+import static com.google.common.collect.Iterables.filter;
+import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_LOGIN_USER;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
 import static org.jclouds.util.Predicates2.retry;
 
@@ -132,7 +135,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       NetworkInterfaceCard nic = createNetworkInterfaceCard(subnetId, name, locationName); 
       StorageProfile storageProfile = createStorageProfile(name, template.getImage(), templateOptions.getBlob());
       HardwareProfile hardwareProfile = HardwareProfile.builder().vmSize(template.getHardware().getId()).build();
-      OSProfile osProfile = createOsProfile(name, templateOptions.getLoginUser(), templateOptions.getPublicKey());
+      OSProfile osProfile = createOsProfile(name, templateOptions);
       NetworkProfile networkProfile = NetworkProfile.builder().networkInterfaces(ImmutableList.of(IdReference.create(nic.id()))).build();
       VirtualMachineProperties virtualMachineProperties = VirtualMachineProperties.builder()
               .licenseType(null) // TODO
@@ -151,67 +154,6 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       // Safe to pass null credentials here, as jclouds will default populate the node with the default credentials from the image, or the ones in the options, if provided.
       return new NodeAndInitialCredentials<VirtualMachine>(virtualMachine, name, null);
    }
-
-   private OSProfile createOsProfile(String computerName, String loginUser, String publicKey) {
-      String adminUsername = Objects.firstNonNull(loginUser, "jclouds");
-      OSProfile.Builder builder = OSProfile.builder().adminUsername(adminUsername).computerName(computerName);
-      if (publicKey !=null) {
-         OSProfile.LinuxConfiguration linuxConfiguration = OSProfile.LinuxConfiguration.create("true",
-                 OSProfile.LinuxConfiguration.SSH.create(Arrays.asList(
-                         OSProfile.LinuxConfiguration.SSH.SSHPublicKey.create(
-                                 String.format("/home/%s/.ssh/authorized_keys", adminUsername),
-                                 publicKey)
-                 ))
-         );
-         builder.linuxConfiguration(linuxConfiguration);
-      }
-      return builder.build();
-   }
-
-   private NetworkInterfaceCard createNetworkInterfaceCard(String subnetId, String name, String locationName) {
-      final PublicIPAddressApi ipApi = api.getPublicIPAddressApi(azureGroup);
-
-      PublicIPAddressProperties properties =
-              PublicIPAddressProperties.builder()
-                      .publicIPAllocationMethod("Static")
-                      .idleTimeoutInMinutes(4)
-                      .build();
-
-      String publicIpAddressName = "public-address-" + name;
-      PublicIPAddress ip = ipApi.createOrUpdate(publicIpAddressName, locationName, ImmutableMap.of("testkey", "testvalue"), properties);
-      retry(new Predicate<String>() {
-         @Override public boolean apply(String name) {
-            return api.getPublicIPAddressApi(azureGroup).get(name).properties().provisioningState().equals("Succeeded");
-         }
-      }, 10 * 1000).apply(publicIpAddressName);
-
-      final NetworkInterfaceCardProperties networkInterfaceCardProperties =
-              NetworkInterfaceCardProperties.builder()
-                      .ipConfigurations(ImmutableList.of(
-                              IpConfiguration.builder()
-                                      .name("ipConfig-" + name)
-                                      .properties(IpConfigurationProperties.builder()
-                                              .privateIPAllocationMethod("Dynamic")
-                                              .publicIPAddress(IdReference.create(ip.id()))
-                                              .subnet(IdReference.create(subnetId))
-                                              .build())
-                                      .build()))
-                      .build();
-
-      String networkInterfaceCardName = "jc-nic-" + name;
-      return api.getNetworkInterfaceCardApi(azureGroup).createOrUpdate(networkInterfaceCardName, locationName, networkInterfaceCardProperties, ImmutableMap.of("jclouds", "livetest"));
-   }
-
-   private StorageProfile createStorageProfile(String name, Image image, String blob) {
-      ImageReference imageReference = ImageReference.builder()
-              .publisher(image.getProviderId())
-              .offer(image.getName())
-              .sku(image.getVersion())
-              .version("latest")
-              .build();
-      VHD vhd = VHD.create(blob + "vhds/" + name + ".vhd");
-      OSDisk osDisk = OSDisk.create(null, name, vhd, "ReadWrite", "FromImage", null);
-      return StorageProfile.create(imageReference, osDisk, ImmutableList.<DataDisk>of());   }
 
    @Override
    public Iterable<VMHardware> listHardwareProfiles() {
@@ -295,10 +237,13 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       List<StorageService> storages = api.getStorageAccountApi(azureGroup).list();
       for (StorageService storage : storages) {
          String name = storage.name();
-         String key = api.getStorageAccountApi(azureGroup).getKeys(name).key1();
+         StorageService storageService = api.getStorageAccountApi(azureGroup).get(name);
+         if (storageService != null && storageService.storageServiceProperties().provisioningState().equals("Succeded")) {
+            String key = api.getStorageAccountApi(azureGroup).getKeys(name).key1();
             List<VMImage> images = BlobHelper.getImages("jclouds", azureGroup, storage.name(), key,
-                  "custom", storage.location());
+                    "custom", storage.location());
             osImages.addAll(images);
+         }
       }
       return osImages;
    }
@@ -394,14 +339,81 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
    @Override
    public Iterable<VirtualMachine> listNodesByIds(final Iterable<String> ids) {
-      return null; // TODO
-      /*
-      return Iterables.filter(listNodes(), new Predicate<VMDeployment>() {
+      return filter(listNodes(), new Predicate<VirtualMachine>() {
          @Override
-         public boolean apply(final VMDeployment input) {
-            return Iterables.contains(ids, input.virtualMachine().name());
+         public boolean apply(VirtualMachine virtualMachine) {
+            return contains(ids, virtualMachine.id());
          }
       });
-      */
+   }
+
+
+   private OSProfile createOsProfile(String computerName, AzureTemplateOptions templateOptions) {
+      Iterable<String> splittedImageLoginUser = Splitter.on(":").split(AzureComputeProviderMetadata.defaultProperties().getProperty(IMAGE_LOGIN_USER));
+      String defaultLoginUser = Iterables.get(splittedImageLoginUser, 0);
+      String defaultLoginPassword = Iterables.get(splittedImageLoginUser, 1);
+      String adminUsername = Objects.firstNonNull(templateOptions.getLoginUser(), defaultLoginUser);
+      String adminPassword = Objects.firstNonNull(templateOptions.getLoginPassword(), defaultLoginPassword);
+      OSProfile.Builder builder = OSProfile.builder().adminUsername(adminUsername).computerName(computerName);
+      // prefer public key over password
+      if (templateOptions.getPublicKey() != null) {
+         OSProfile.LinuxConfiguration linuxConfiguration = OSProfile.LinuxConfiguration.create("true",
+                 OSProfile.LinuxConfiguration.SSH.create(ImmutableList.of(
+                         OSProfile.LinuxConfiguration.SSH.SSHPublicKey.create(
+                                 String.format("/home/%s/.ssh/authorized_keys", adminUsername),
+                                 templateOptions.getPublicKey())
+                 ))
+         );
+         builder.linuxConfiguration(linuxConfiguration);
+      } else {
+         builder.adminPassword(adminPassword);
+      }
+      return builder.build();
+   }
+
+   private NetworkInterfaceCard createNetworkInterfaceCard(String subnetId, String name, String locationName) {
+      final PublicIPAddressApi ipApi = api.getPublicIPAddressApi(azureGroup);
+
+      PublicIPAddressProperties properties =
+              PublicIPAddressProperties.builder()
+                      .publicIPAllocationMethod("Static")
+                      .idleTimeoutInMinutes(4)
+                      .build();
+
+      String publicIpAddressName = "public-address-" + name;
+      PublicIPAddress ip = ipApi.createOrUpdate(publicIpAddressName, locationName, ImmutableMap.of("jclouds", name), properties);
+      retry(new Predicate<String>() {
+         @Override public boolean apply(String name) {
+            return api.getPublicIPAddressApi(azureGroup).get(name).properties().provisioningState().equals("Succeeded");
+         }
+      }, 10 * 1000).apply(publicIpAddressName);
+
+      final NetworkInterfaceCardProperties networkInterfaceCardProperties =
+              NetworkInterfaceCardProperties.builder()
+                      .ipConfigurations(ImmutableList.of(
+                              IpConfiguration.builder()
+                                      .name("ipConfig-" + name)
+                                      .properties(IpConfigurationProperties.builder()
+                                              .privateIPAllocationMethod("Dynamic")
+                                              .publicIPAddress(IdReference.create(ip.id()))
+                                              .subnet(IdReference.create(subnetId))
+                                              .build())
+                                      .build()))
+                      .build();
+
+      String networkInterfaceCardName = "jc-nic-" + name;
+      return api.getNetworkInterfaceCardApi(azureGroup).createOrUpdate(networkInterfaceCardName, locationName, networkInterfaceCardProperties, ImmutableMap.of("jclouds", name));
+   }
+
+   private StorageProfile createStorageProfile(String name, Image image, String blob) {
+      ImageReference imageReference = ImageReference.builder()
+              .publisher(image.getProviderId())
+              .offer(image.getName())
+              .sku(image.getVersion())
+              .version("latest")
+              .build();
+      VHD vhd = VHD.create(blob + "vhds/" + name + ".vhd");
+      OSDisk osDisk = OSDisk.create(null, name, vhd, "ReadWrite", "FromImage", null);
+      return StorageProfile.create(imageReference, osDisk, ImmutableList.<DataDisk>of());
    }
 }

@@ -175,14 +175,15 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
       StorageService storageService = api.getStorageAccountApi(resourceGroupName).get(storageAccountName);
       if (storageService != null) return storageService;
 
-      URI uri = api.getStorageAccountApi(resourceGroupName).create(storageAccountName, locationName, ImmutableMap.of("property_name",
-              "property_value"), ImmutableMap.of("accountType", StorageService.AccountType.Standard_LRS.toString()));
+      URI uri = api.getStorageAccountApi(resourceGroupName).create(storageAccountName, locationName, ImmutableMap.of("jclouds",
+              name), ImmutableMap.of("accountType", StorageService.AccountType.Standard_LRS.toString()));
       retry(new Predicate<URI>() {
          @Override
          public boolean apply(URI uri) {
             return ParseJobStatus.JobStatus.DONE == api.getJobApi().jobStatus(uri);
          }
-      }, 60 * 1 * 1000 /* 1 minute timeout */).apply(uri);
+      }, 60 * 2 * 1000 /* 2 minutes timeout */).apply(uri);
+      // TODO check provisioning state of the primary
       storageService = api.getStorageAccountApi(resourceGroupName).get(storageAccountName);
       return storageService;
    }
@@ -199,20 +200,18 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
     * If sanitized name is more than 24 characters, storage account is first 10 chars of sanitized name plus 4 random chars plus last 10 chars of sanitized name.
     */
    public static String generateStorageAccountName(String name) {
-      String storageAccountName = name.replaceAll("[^a-z0-9]", "");
-      int nameLength = storageAccountName.length();
+      String random = UUID.randomUUID().toString().substring(0, 4);
+      String storageAccountName = new StringBuilder().append(name).append(random).toString();
+      String sanitizedStorageAccountName = storageAccountName.replaceAll("[^a-z0-9]", "");
+      int nameLength = sanitizedStorageAccountName.length();
       if (nameLength >= 3 && nameLength <= 24) {
-         return storageAccountName;
+         return sanitizedStorageAccountName;
       }
 
-      String random = UUID.randomUUID().toString().replaceAll("[^a-z0-9]", "").substring(0, 4);
-      if (nameLength < 3) {
-         storageAccountName = new StringBuilder().append(storageAccountName).append(random).toString();
-      }
       if (nameLength > 24) {
-         storageAccountName = shorten(storageAccountName, random);
+         sanitizedStorageAccountName = shorten(storageAccountName, random);
       }
-      return storageAccountName;
+      return sanitizedStorageAccountName;
    }
 
    private static String shorten(String storageAccountName, String random) {
