@@ -37,6 +37,7 @@ public abstract class VirtualMachineProperties {
       DELETED,
       SUCCEEDED,
       RUNNING,
+      UPDATING,
       UNRECOGNIZED;
 
       public static ProvisioningState fromValue(final String text) {

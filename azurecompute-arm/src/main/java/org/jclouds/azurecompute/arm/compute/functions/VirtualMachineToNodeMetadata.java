@@ -25,12 +25,17 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.jclouds.azurecompute.arm.AzureComputeApi;
+import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule.AzureComputeConstants;
 import org.jclouds.azurecompute.arm.domain.IdReference;
 import org.jclouds.azurecompute.arm.domain.ImageReference;
 import org.jclouds.azurecompute.arm.domain.IpConfiguration;
 import org.jclouds.azurecompute.arm.domain.NetworkInterfaceCard;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
+import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties;
+import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance.VirtualMachineStatus;
+import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance.VirtualMachineStatus.PowerState;
+import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties.ProvisioningState;
 import org.jclouds.collect.Memoized;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
@@ -43,7 +48,10 @@ import org.jclouds.domain.Location;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
 
+import autovalue.shaded.com.google.common.common.base.Joiner;
+
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
@@ -54,6 +62,7 @@ import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.find;
+import static com.google.common.collect.Iterables.transform;
 
 public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, NodeMetadata> {
 
@@ -67,19 +76,30 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
    //
    // To get details about the resource(s) deployed via template, one needs to query the
    // various resources after the deployment has "SUCCEEDED".
-   private static final Map<VirtualMachineProperties.ProvisioningState, NodeMetadata.Status> STATUS_TO_NODESTATUS =
-           ImmutableMap.<VirtualMachineProperties.ProvisioningState, NodeMetadata.Status>builder().
-                   put(VirtualMachineProperties.ProvisioningState.ACCEPTED, NodeMetadata.Status.PENDING).
-                   put(VirtualMachineProperties.ProvisioningState.READY, NodeMetadata.Status.PENDING).
-                   put(VirtualMachineProperties.ProvisioningState.CREATING, NodeMetadata.Status.PENDING).
-                   put(VirtualMachineProperties.ProvisioningState.RUNNING, NodeMetadata.Status.PENDING).
-                   put(VirtualMachineProperties.ProvisioningState.CANCELED, NodeMetadata.Status.TERMINATED).
-                   put(VirtualMachineProperties.ProvisioningState.FAILED, NodeMetadata.Status.ERROR).
-                   put(VirtualMachineProperties.ProvisioningState.DELETED, NodeMetadata.Status.TERMINATED).
-                   put(VirtualMachineProperties.ProvisioningState.SUCCEEDED, NodeMetadata.Status.RUNNING).
-                   put(VirtualMachineProperties.ProvisioningState.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).
-                   build();
-
+   private static final Function<VirtualMachineProperties.ProvisioningState, NodeMetadata.Status> PROVISIONINGSTATE_TO_NODESTATUS = Functions
+         .forMap(
+               ImmutableMap.<VirtualMachineProperties.ProvisioningState, NodeMetadata.Status> builder()
+                     .put(VirtualMachineProperties.ProvisioningState.ACCEPTED, NodeMetadata.Status.PENDING)
+                     .put(VirtualMachineProperties.ProvisioningState.READY, NodeMetadata.Status.PENDING)
+                     .put(VirtualMachineProperties.ProvisioningState.CREATING, NodeMetadata.Status.PENDING)
+                     .put(VirtualMachineProperties.ProvisioningState.RUNNING, NodeMetadata.Status.PENDING)
+                     .put(VirtualMachineProperties.ProvisioningState.UPDATING, NodeMetadata.Status.PENDING)
+                     .put(VirtualMachineProperties.ProvisioningState.SUCCEEDED, NodeMetadata.Status.RUNNING)
+                     .put(VirtualMachineProperties.ProvisioningState.DELETED, NodeMetadata.Status.TERMINATED)
+                     .put(VirtualMachineProperties.ProvisioningState.CANCELED, NodeMetadata.Status.TERMINATED)
+                     .put(VirtualMachineProperties.ProvisioningState.FAILED, NodeMetadata.Status.ERROR)
+                     .put(VirtualMachineProperties.ProvisioningState.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED)
+                     .build(), NodeMetadata.Status.UNRECOGNIZED);
+   
+   private static final Function<VirtualMachineStatus.PowerState, NodeMetadata.Status> POWERSTATE_TO_NODESTATUS = Functions
+         .forMap(
+               ImmutableMap.<PowerState, NodeMetadata.Status> builder()
+                     .put(PowerState.RUNNING, NodeMetadata.Status.RUNNING)
+                     .put(PowerState.STOPPED, NodeMetadata.Status.SUSPENDED)
+                     .put(PowerState.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build(),
+               NodeMetadata.Status.UNRECOGNIZED);
+   
+   private final String azureGroup;
    private final AzureComputeApi api;
    private final GroupNamingConvention nodeNamingConvention;
    private final Supplier<Map<String, ? extends Image>> images;
@@ -88,18 +108,17 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
    private final Map<String, Credentials> credentialStore;
 
    @Inject
-   VirtualMachineToNodeMetadata(
-           AzureComputeApi api,
-           GroupNamingConvention.Factory namingConvention,
-           Supplier<Map<String, ? extends Image>> images,
-           Supplier<Map<String, ? extends Hardware>> hardwares,
-           @Memoized Supplier<Set<? extends Location>> locations, Map<String, Credentials> credentialStore) {
+   VirtualMachineToNodeMetadata(AzureComputeApi api, GroupNamingConvention.Factory namingConvention,
+         Supplier<Map<String, ? extends Image>> images, Supplier<Map<String, ? extends Hardware>> hardwares,
+         @Memoized Supplier<Set<? extends Location>> locations, Map<String, Credentials> credentialStore,
+         final AzureComputeConstants azureComputeConstants) {
       this.api = api;
       this.nodeNamingConvention = namingConvention.createWithoutPrefix();
       this.images = checkNotNull(images, "images cannot be null");
       this.locations = checkNotNull(locations, "locations cannot be null");
       this.hardwares = checkNotNull(hardwares, "hardwares cannot be null");
       this.credentialStore = credentialStore;
+      this.azureGroup = azureComputeConstants.azureResourceGroup();
    }
    @Override
    public NodeMetadata apply(VirtualMachine virtualMachine) {
@@ -110,7 +129,21 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       builder.hostname(virtualMachine.name());
       String group = this.nodeNamingConvention.extractGroup(virtualMachine.name());
       builder.group(group);
-      builder.status(getStatus(virtualMachine.properties().provisioningState()));
+      
+      ProvisioningState provisioningState = virtualMachine.properties().provisioningState();
+      if (ProvisioningState.SUCCEEDED.equals(provisioningState)) {
+         // If the provisioning succeeded, we need to query the *real* status of the VM
+         VirtualMachineInstance instanceDetails = api.getVirtualMachineApi(azureGroup).getInstanceDetails(virtualMachine.name());
+         builder.status(POWERSTATE_TO_NODESTATUS.apply(instanceDetails.powerState()));
+         builder.backendStatus(Joiner.on(',').join(transform(instanceDetails.statuses(), new Function<VirtualMachineStatus, String>() {
+            @Override public String apply(VirtualMachineStatus input) {
+               return input.code();
+            }
+         })));
+      } else {
+         builder.status(PROVISIONINGSTATE_TO_NODESTATUS.apply(provisioningState));
+         builder.backendStatus(provisioningState.name());   
+      }
 
       Credentials credentials = credentialStore.get("node#" + virtualMachine.name());
       builder.credentials(LoginCredentials.fromCredentials(credentials));
@@ -175,10 +208,6 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
          }
       }
       return publicIpAddresses;
-   }
-
-   private NodeMetadata.Status getStatus(VirtualMachineProperties.ProvisioningState provisioningState) {
-      return STATUS_TO_NODESTATUS.get(provisioningState);
    }
 
    protected Location getLocation(final String locationName) {

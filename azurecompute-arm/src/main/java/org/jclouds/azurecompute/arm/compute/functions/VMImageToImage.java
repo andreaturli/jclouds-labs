@@ -37,7 +37,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class VMImageToImage implements Function<VMImage, Image> {
 
-   private static final String UNRECOGNIZED = "UNRECOGNIZED";
    private static final String UBUNTU = "Ubuntu";
    private static final String WINDOWS = "Windows";
    private static final String OPENLOGIC = "openLogic";
@@ -45,8 +44,8 @@ public class VMImageToImage implements Function<VMImage, Image> {
    private static final String COREOS = "CoreOS";
    private static final String OPENSUSE = "openSUSE";
    private static final String SUSE = "SUSE";
-   private static final String SQL_SERVER = "SQL Server";
-   private static final String ORACLE_lINUX = "Oracle Linux";
+   private static final String SLES = "SLES";
+   private static final String ORACLE_lINUX = "Oracle-Linux";
    private static final String RHEL = "RHEL";
 
    private final Supplier<Set<? extends org.jclouds.domain.Location>> locations;
@@ -139,11 +138,11 @@ public class VMImageToImage implements Function<VMImage, Image> {
             final String label = image.offer();
 
             OsFamily family = OsFamily.UNRECOGNIZED;
-            if (label.contains(CENTOS)) {
+            if (label.contains(CENTOS) || label.contains(OPENLOGIC)) {
                family = OsFamily.CENTOS;
-            } else if (label.contains(OPENLOGIC)) {
-               family = OsFamily.CENTOS;
-            } else if (label.contains(SUSE)) {
+            } else if (label.contains(COREOS)) {
+               family = OsFamily.COREOS;
+            } else if (label.contains(SUSE) || label.contains(SLES) || label.contains(OPENSUSE)) {
                family = OsFamily.SUSE;
             } else if (label.contains(UBUNTU)) {
                family = OsFamily.UBUNTU;

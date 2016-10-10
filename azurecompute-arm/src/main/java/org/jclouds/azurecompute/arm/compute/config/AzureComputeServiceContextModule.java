@@ -34,6 +34,7 @@ import org.jclouds.azurecompute.arm.compute.functions.VirtualMachineToNodeMetada
 import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.compute.strategy.CreateResourceGroupThenCreateNodes;
 import org.jclouds.azurecompute.arm.domain.Location;
+import org.jclouds.azurecompute.arm.domain.PublicIPAddress;
 import org.jclouds.azurecompute.arm.domain.ResourceDefinition;
 import org.jclouds.azurecompute.arm.domain.VMHardware;
 import org.jclouds.azurecompute.arm.domain.VMImage;
@@ -232,6 +233,15 @@ public class AzureComputeServiceContextModule
       return retry(new VirtualMachineInStatePredicate(api, azureGroup, ProvisioningState.DELETED), timeouts.nodeTerminated,
               pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
    }
+   
+   @Provides
+   @Named("PublicIpAvailable")
+   protected Predicate<String> providePublicIpAvailablePredicate(final AzureComputeApi api, final AzureComputeServiceContextModule.AzureComputeConstants azureComputeConstants,
+                                                             Timeouts timeouts, PollPeriod pollPeriod) {
+      String azureGroup = azureComputeConstants.azureResourceGroup();
+      return retry(new PublicIpAvailablePredicate(api, azureGroup), azureComputeConstants.operationTimeout(),
+            azureComputeConstants.operationPollInitialPeriod(), azureComputeConstants.operationPollMaxPeriod());
+   }
 
    @VisibleForTesting
    static class ActionDonePredicate implements Predicate<URI> {
@@ -288,6 +298,26 @@ public class AzureComputeServiceContextModule
          if (virtualMachine == null) return false;
          ProvisioningState state = virtualMachine.properties().provisioningState();
          return state == provisioningState;
+      }
+   }
+   
+   @VisibleForTesting
+   static class PublicIpAvailablePredicate implements Predicate<String> {
+
+      private final AzureComputeApi api;
+      private final String azureGroup;
+
+      public PublicIpAvailablePredicate(AzureComputeApi api, String azureGroup) {
+         this.api = checkNotNull(api, "api must not be null");
+         this.azureGroup = checkNotNull(azureGroup, "azuregroup must not be null");
+      }
+
+      @Override
+      public boolean apply(String name) {
+         checkNotNull(name, "name cannot be null");
+         PublicIPAddress publicIp = api.getPublicIPAddressApi(azureGroup).get(name);
+         if (publicIp == null) return false;
+         return publicIp.properties().provisioningState().equalsIgnoreCase("Succeeded");
       }
    }
 

@@ -16,6 +16,12 @@
  */
 package org.jclouds.azurecompute.arm.compute;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.contains;
+import static com.google.common.collect.Iterables.filter;
+import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_LOGIN_USER;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -81,13 +87,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Iterables.contains;
-import static com.google.common.collect.Iterables.filter;
-import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_LOGIN_USER;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
-import static org.jclouds.util.Predicates2.retry;
-
 /**
  * Defines the connection between the {@link AzureComputeApi} implementation and the jclouds
  * {@link org.jclouds.compute.ComputeService}.
@@ -99,20 +98,21 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
    @Named(ComputeServiceConstants.COMPUTE_LOGGER)
    private Logger logger = Logger.NULL;
 
-   private String azureGroup;
+   private final String azureGroup;
    private final CleanupResources cleanupResources;
    private final AzureComputeApi api;
    private final AzureComputeConstants azureComputeConstants;
    private final Supplier<Set<String>> regionIds;
    private final Predicate<String> nodeRunningPredicate;
+   private final Predicate<String> publicIpAvailable;
 
    @Inject
    AzureComputeServiceAdapter(final AzureComputeApi api, final AzureComputeConstants azureComputeConstants,
          CleanupResources cleanupResources, @Region Supplier<Set<String>> regionIds,
-                              @Named(TIMEOUT_NODE_RUNNING) Predicate<String> nodeRunningPredicate) {
+         @Named(TIMEOUT_NODE_RUNNING) Predicate<String> nodeRunningPredicate,
+         @Named("PublicIpAvailable") Predicate<String> publicIpAvailable) {
       this.api = api;
       this.azureComputeConstants = azureComputeConstants;
-      // TODO remove this constant, use `group`
       this.azureGroup = azureComputeConstants.azureResourceGroup();
 
       logger.debug("AzureComputeServiceAdapter set azuregroup to: " + azureGroup);
@@ -120,6 +120,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
       this.cleanupResources = cleanupResources;
       this.regionIds = regionIds;
       this.nodeRunningPredicate = nodeRunningPredicate;
+      this.publicIpAvailable = publicIpAvailable;
    }
 
    @Override
@@ -382,11 +383,11 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
       String publicIpAddressName = "public-address-" + name;
       PublicIPAddress ip = ipApi.createOrUpdate(publicIpAddressName, locationName, ImmutableMap.of("jclouds", name), properties);
-      retry(new Predicate<String>() {
-         @Override public boolean apply(String name) {
-            return api.getPublicIPAddressApi(azureGroup).get(name).properties().provisioningState().equals("Succeeded");
-         }
-      }, 10 * 1000).apply(publicIpAddressName);
+      publicIpAvailable.apply(publicIpAddressName);
+      // Refresh after last polling
+      ip = api.getPublicIPAddressApi(azureGroup).get(publicIpAddressName);
+      checkState(ip.properties().provisioningState().equals("Succeeded"),
+            "Public IP was not provisioned in the configured timeout");
 
       final NetworkInterfaceCardProperties networkInterfaceCardProperties =
               NetworkInterfaceCardProperties.builder()

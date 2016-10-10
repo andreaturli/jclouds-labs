@@ -116,7 +116,7 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.put(API_VERSION_PREFIX + "GetVirtualMachine", "2016-03-30");
       properties.put(API_VERSION_PREFIX + "GetVirtualMachineInstance", "2016-03-30");
       properties.put(API_VERSION_PREFIX + "CreateVirtualMachine", "2016-03-30");
-      properties.put(API_VERSION_PREFIX + "ListVirtualMachines", "2016-06-01");
+      properties.put(API_VERSION_PREFIX + "ListVirtualMachines", "2015-06-15");
       properties.put(API_VERSION_PREFIX + "DeleteVirtualMachine", "2016-03-30");
       
       return properties;
