@@ -56,6 +56,7 @@ import com.google.inject.Module;
 @Test(groups = "live", singleThreaded = true, testName = "AzureComputeServiceLiveTest")
 public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
 
+   
    public AzureComputeServiceLiveTest() {
       provider = "azurecompute-arm";
       nonBlockDurationSeconds = 300;

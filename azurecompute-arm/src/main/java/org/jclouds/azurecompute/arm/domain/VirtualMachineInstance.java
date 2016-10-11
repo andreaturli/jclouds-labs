@@ -40,7 +40,7 @@ import com.google.common.collect.ImmutableList;
 @AutoValue
 public abstract class VirtualMachineInstance {
 
-   @AutoValue
+   @com.google.auto.value.AutoValue
    public abstract static class VirtualMachineStatus {
       
       public static final String PROVISIONING_STATE_PREFIX = "ProvisioningState/";

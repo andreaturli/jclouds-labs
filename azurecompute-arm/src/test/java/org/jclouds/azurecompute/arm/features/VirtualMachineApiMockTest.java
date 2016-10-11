@@ -93,14 +93,14 @@ public class VirtualMachineApiMockTest extends BaseAzureComputeApiMockTest {
       final VirtualMachineApi vmAPI = api.getVirtualMachineApi("groupname");
       assertEquals(vmAPI.list(), getVMList());
       assertSent(server, "GET", "/subscriptions/SUBSCRIPTIONID/resourceGroups/groupname/providers/Microsoft.Compute" +
-              "/virtualMachines?api-version=2016-06-01");
+              "/virtualMachines?api-version=2015-06-15");
    }
    public void testListEmpty() throws Exception {
       server.enqueue(new MockResponse().setResponseCode(404));
       final VirtualMachineApi vmAPI = api.getVirtualMachineApi("groupname");
       assertTrue(isEmpty(vmAPI.list()));
       assertSent(server, "GET", "/subscriptions/SUBSCRIPTIONID/resourceGroups/groupname/providers/Microsoft.Compute" +
-              "/virtualMachines?api-version=2016-06-01");
+              "/virtualMachines?api-version=2015-06-15");
    }
 
    public void testCreate() throws Exception {
@@ -119,7 +119,7 @@ public class VirtualMachineApiMockTest extends BaseAzureComputeApiMockTest {
                       "\"vhd\":{\"uri\":\"https://groupname2760.blob.core.windows.net/vhds/windowsmachine201624102936.vhd\"},\"caching\":\"ReadWrite\",\"createOption\":\"FromImage\"},\"dataDisks\":[]}," +
                       "\"osProfile\":{\"computerName\":\"windowsmachine\",\"adminUsername\":\"azureuser\",\"windowsConfiguration\":{\"provisionVMAgent\":false,\"enableAutomaticUpdates\":true}}," +
                       "\"networkProfile\":{\"networkInterfaces\":[{\"id\":\"/subscriptions/SUBSCRIPTIONID/resourceGroups/groupname/providers/Microsoft.Network/networkInterfaces/windowsmachine167\"}]}," +
-                      "\"diagnosticsProfile\":{\"bootDiagnostics\":{\"enabled\":true,\"storageUri\":\"https://groupname2760.blob.core.windows.net/\"}},\"provisioningState\":\"Creating\"}}");
+                      "\"diagnosticsProfile\":{\"bootDiagnostics\":{\"enabled\":true,\"storageUri\":\"https://groupname2760.blob.core.windows.net/\"}},\"provisioningState\":\"CREATING\"}}");
 
    }
 
