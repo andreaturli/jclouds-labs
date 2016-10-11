@@ -151,26 +151,26 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       builder.publicAddresses(getPublicIpAddresses(virtualMachine.properties().networkProfile().networkInterfaces()));
       builder.privateAddresses(getPrivateIpAddresses(virtualMachine.properties().networkProfile().networkInterfaces()));
 
-         if (virtualMachine.tags() != null) {
-            Map<String, String> userMetaData = virtualMachine.tags();
-            builder.userMetadata(userMetaData);
-            builder.tags(Splitter.on(",").split(userMetaData.get("tags")));
-         }
-         String locationName = virtualMachine.location();
-         builder.location(getLocation(locationName));
+      if (virtualMachine.tags() != null) {
+         Map<String, String> userMetaData = virtualMachine.tags();
+         builder.userMetadata(userMetaData);
+         builder.tags(Splitter.on(",").split(userMetaData.get("tags")));
+      }
+      String locationName = virtualMachine.location();
+      builder.location(getLocation(locationName));
 
-         ImageReference imageReference = virtualMachine.properties().storageProfile().imageReference();
-         Optional<? extends Image> image = findImage(imageReference, locationName);
-         if (image.isPresent()) {
-            builder.imageId(image.get().getId());
-            builder.operatingSystem(image.get().getOperatingSystem());
-         } else {
-            logger.info(">> image with id %s for virtualmachine %s was not found. "
-                            + "This might be because the image that was used to create the virtualmachine has a new id.",
-                    virtualMachine.id(), virtualMachine.id());
-         }
+      ImageReference imageReference = virtualMachine.properties().storageProfile().imageReference();
+      Optional<? extends Image> image = findImage(imageReference, locationName);
+      if (image.isPresent()) {
+         builder.imageId(image.get().getId());
+         builder.operatingSystem(image.get().getOperatingSystem());
+      } else {
+         logger.info(">> image with id %s for virtualmachine %s was not found. "
+               + "This might be because the image that was used to create the virtualmachine has a new id.",
+               virtualMachine.id(), virtualMachine.id());
+      }
 
-         builder.hardware(getHardware(virtualMachine.properties().hardwareProfile().vmSize()));
+      builder.hardware(getHardware(virtualMachine.properties().hardwareProfile().vmSize()));
 
       return builder.build();
    }
@@ -191,15 +191,14 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       String resourceGroup = Iterables.get(Splitter.on("/").split(networkInterfaceCardIdReference.id()), 4);
       String nicName = Iterables.getLast(Splitter.on("/").split(networkInterfaceCardIdReference.id()));
       return api.getNetworkInterfaceCardApi(resourceGroup).get(nicName);
+      
    }
 
    private Iterable<String> getPublicIpAddresses(List<IdReference> idReferences) {
       List<String> publicIpAddresses = Lists.newArrayList();
       for (IdReference networkInterfaceCardIdReference : idReferences) {
-         Iterables.get(Splitter.on("/").split(networkInterfaceCardIdReference.id()), 2);
+         NetworkInterfaceCard networkInterfaceCard = getNetworkInterfaceCard(networkInterfaceCardIdReference);
          String resourceGroup = Iterables.get(Splitter.on("/").split(networkInterfaceCardIdReference.id()), 4);
-         String nicName = Iterables.getLast(Splitter.on("/").split(networkInterfaceCardIdReference.id()));
-         NetworkInterfaceCard networkInterfaceCard = api.getNetworkInterfaceCardApi(resourceGroup).get(nicName);
          for (IpConfiguration ipConfiguration : networkInterfaceCard.properties().ipConfigurations()) {
             if (ipConfiguration.properties().publicIPAddress() != null) {
                String publicIpId = ipConfiguration.properties().publicIPAddress().id();

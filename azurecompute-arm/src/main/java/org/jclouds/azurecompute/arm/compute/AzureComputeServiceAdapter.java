@@ -22,7 +22,6 @@ import static com.google.common.collect.Iterables.filter;
 import static org.jclouds.compute.config.ComputeServiceProperties.IMAGE_LOGIN_USER;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -78,14 +77,11 @@ import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.base.Supplier;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 /**
  * Defines the connection between the {@link AzureComputeApi} implementation and the jclouds
@@ -129,7 +125,11 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
       AzureTemplateOptions templateOptions = template.getOptions().as(AzureTemplateOptions.class);
 
+      // TODO Store group apart from the name to be able to identify nodes with custom names in the configured group
       // TODO ARM specific options
+      // TODO user metadata and tags
+      // TODO network ids => create one nic in each network
+      // TODO inbound ports
       
       String locationName = template.getLocation().getId();
       String subnetId = templateOptions.getSubnetId();
@@ -158,16 +158,9 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
    @Override
    public Iterable<VMHardware> listHardwareProfiles() {
-
       final List<VMHardware> hwProfiles = Lists.newArrayList();
-      final List<String> locationIds = Lists.newArrayList();
-
-      Iterable<Location> locations = listLocations();
-      for (Location location : locations){
-         locationIds.add(location.name());
-
+      for (Location location : listLocations()) {
          Iterable<VMSize> vmSizes = api.getVMSizeApi(location.name()).list();
-
          for (VMSize vmSize : vmSizes){
             VMHardware hwProfile = VMHardware.create(
                     vmSize.name(),
@@ -181,21 +174,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
             hwProfiles.add(hwProfile);
          }
       }
-
-      checkAndSetHwAvailability(hwProfiles, Sets.newHashSet(locationIds));
-
       return hwProfiles;
-   }
-   private void checkAndSetHwAvailability(List<VMHardware> hwProfiles, Collection<String> locations) {
-      Multimap<String, String> hwMap = ArrayListMultimap.create();
-      for (VMHardware hw : hwProfiles) {
-         hwMap.put(hw.name(), hw.location());
-      }
-
-      /// TODO
-      //      for (VMHardware hw : hwProfiles) {
-      //         hw.globallyAvailable() = hwMap.get(hw.name()).containsAll(locations);
-      //      }
    }
 
    private List<VMImage> getImagesFromPublisher(String publisherName, String location) {
@@ -228,7 +207,6 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
    @Override
    public Iterable<VMImage> listImages() {
-
       final List<VMImage> osImages = Lists.newArrayList();
 
       for (Location location : listLocations()){
@@ -246,6 +224,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
             osImages.addAll(images);
          }
       }
+      
       return osImages;
    }
 
