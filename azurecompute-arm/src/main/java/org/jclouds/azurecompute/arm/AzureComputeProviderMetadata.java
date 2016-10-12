@@ -88,7 +88,7 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.setProperty(TCP_RULE_REGEXP, "tcp_\\d{1,5}-\\d{1,5}");
       properties.put(RESOURCE, "https://management.azure.com/");
       properties.put(CREDENTIAL_TYPE, CLIENT_CREDENTIALS_SECRET.toString());
-      properties.put(RESOURCE_GROUP_NAME, "jcloudsgroup");
+      properties.put(RESOURCE_GROUP_NAME, "jclouds");
       properties.put(DEFAULT_VNET_ADDRESS_SPACE_PREFIX, "10.0.0.0/16");
       properties.put(DEFAULT_SUBNET_ADDRESS_PREFIX, "10.0.0.0/24");
       properties.put(DEFAULT_DATADISKSIZE, "100");

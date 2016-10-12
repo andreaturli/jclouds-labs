@@ -16,6 +16,11 @@
  */
 package org.jclouds.azurecompute.arm.compute.strategy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static org.jclouds.azurecompute.arm.compute.functions.VMImageToImage.decodeFieldsFromUniqueId;
+import static org.jclouds.util.Predicates2.retry;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
@@ -34,6 +39,7 @@ import org.jclouds.azurecompute.arm.compute.options.AzureTemplateOptions;
 import org.jclouds.azurecompute.arm.domain.ResourceGroup;
 import org.jclouds.azurecompute.arm.domain.StorageService;
 import org.jclouds.azurecompute.arm.domain.Subnet;
+import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.azurecompute.arm.features.ResourceGroupApi;
 import org.jclouds.azurecompute.arm.features.SubnetApi;
@@ -57,10 +63,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_PREFIX;
-import static org.jclouds.util.Predicates2.retry;
 
 @Singleton
 public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEncodedIntoNameThenAddToSet {
@@ -163,9 +165,9 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
 
    public StorageService getOrCreateStorageService(String name, String resourceGroupName, String locationName, Image image) {
       String storageAccountName = null;
-      String imageName = image.getName();
-      if (imageName.startsWith(CUSTOM_IMAGE_PREFIX)) {
-         storageAccountName = image.getVersion();
+      VMImage imageRef = decodeFieldsFromUniqueId(image.getId());
+      if (imageRef.custom()) {
+         storageAccountName = imageRef.storage();
       }
 
       if (Strings.isNullOrEmpty(storageAccountName)) {
@@ -177,15 +179,16 @@ public class CreateResourceGroupThenCreateNodes extends CreateNodesWithGroupEnco
 
       URI uri = api.getStorageAccountApi(resourceGroupName).create(storageAccountName, locationName, ImmutableMap.of("jclouds",
               name), ImmutableMap.of("accountType", StorageService.AccountType.Standard_LRS.toString()));
-      retry(new Predicate<URI>() {
+      boolean starageAccountCreated = retry(new Predicate<URI>() {
          @Override
          public boolean apply(URI uri) {
             return ParseJobStatus.JobStatus.DONE == api.getJobApi().jobStatus(uri);
          }
       }, 60 * 2 * 1000 /* 2 minutes timeout */).apply(uri);
       // TODO check provisioning state of the primary
-      storageService = api.getStorageAccountApi(resourceGroupName).get(storageAccountName);
-      return storageService;
+      checkState(starageAccountCreated, "Storage account %s was not created in the configured timeout",
+            storageAccountName);
+      return api.getStorageAccountApi(resourceGroupName).get(storageAccountName);
    }
 
    /**

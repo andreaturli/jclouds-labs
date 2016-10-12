@@ -16,6 +16,15 @@
  */
 package org.jclouds.azurecompute.arm.compute.functions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.find;
+import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Iterables.tryFind;
+import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CONTAINER_NAME;
+import static org.jclouds.azurecompute.arm.compute.extensions.AzureComputeImageExtension.CUSTOM_IMAGE_OFFER;
+import static org.jclouds.azurecompute.arm.compute.functions.VMImageToImage.encodeFieldsToUniqueId;
+
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,15 +36,18 @@ import javax.inject.Named;
 import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.config.AzureComputeServiceContextModule.AzureComputeConstants;
 import org.jclouds.azurecompute.arm.domain.IdReference;
-import org.jclouds.azurecompute.arm.domain.ImageReference;
 import org.jclouds.azurecompute.arm.domain.IpConfiguration;
 import org.jclouds.azurecompute.arm.domain.NetworkInterfaceCard;
+import org.jclouds.azurecompute.arm.domain.StorageProfile;
+import org.jclouds.azurecompute.arm.domain.StorageServiceKeys;
+import org.jclouds.azurecompute.arm.domain.VMImage;
 import org.jclouds.azurecompute.arm.domain.VirtualMachine;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance.VirtualMachineStatus;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineInstance.VirtualMachineStatus.PowerState;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties;
 import org.jclouds.azurecompute.arm.domain.VirtualMachineProperties.ProvisioningState;
+import org.jclouds.azurecompute.arm.util.BlobHelper;
 import org.jclouds.collect.Memoized;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
@@ -58,10 +70,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.find;
-import static com.google.common.collect.Iterables.transform;
 
 public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, NodeMetadata> {
 
@@ -105,12 +113,14 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
    private final Supplier<Set<? extends Location>> locations;
    private final Supplier<Map<String, ? extends Hardware>> hardwares;
    private final Map<String, Credentials> credentialStore;
+   private final Function<VMImage, Image> vmImageToImge;
 
    @Inject
    VirtualMachineToNodeMetadata(AzureComputeApi api, GroupNamingConvention.Factory namingConvention,
          Supplier<Map<String, ? extends Image>> images, Supplier<Map<String, ? extends Hardware>> hardwares,
          @Memoized Supplier<Set<? extends Location>> locations, Map<String, Credentials> credentialStore,
-         final AzureComputeConstants azureComputeConstants) {
+         final AzureComputeConstants azureComputeConstants,
+         Function<VMImage, Image> vmImageToImge) {
       this.api = api;
       this.nodeNamingConvention = namingConvention.createWithoutPrefix();
       this.images = checkNotNull(images, "images cannot be null");
@@ -118,6 +128,7 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       this.hardwares = checkNotNull(hardwares, "hardwares cannot be null");
       this.credentialStore = credentialStore;
       this.azureGroup = azureComputeConstants.azureResourceGroup();
+      this.vmImageToImge = vmImageToImge;
    }
    @Override
    public NodeMetadata apply(VirtualMachine virtualMachine) {
@@ -158,8 +169,7 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       String locationName = virtualMachine.location();
       builder.location(getLocation(locationName));
 
-      ImageReference imageReference = virtualMachine.properties().storageProfile().imageReference();
-      Optional<? extends Image> image = findImage(imageReference, locationName);
+      Optional<? extends Image> image = findImage(virtualMachine.properties().storageProfile(), locationName);
       if (image.isPresent()) {
          builder.imageId(image.get().getId());
          builder.operatingSystem(image.get().getOperatingSystem());
@@ -217,8 +227,28 @@ public class VirtualMachineToNodeMetadata  implements Function<VirtualMachine, N
       }, null);
    }
 
-   protected Optional<? extends Image> findImage(ImageReference imageReference, String locatioName) {
-      return Optional.fromNullable(images.get().get(VMImageToImage.encodeFieldsToUniqueId(false, locatioName, imageReference)));
+   protected Optional<? extends Image> findImage(final StorageProfile storageProfile, String locatioName) {
+      if (storageProfile.imageReference() != null) {
+         return Optional.fromNullable(images.get().get(encodeFieldsToUniqueId(false, locatioName, storageProfile.imageReference())));
+      } else {
+         String storageAccountNameURI = storageProfile.osDisk().vhd().uri();
+         String storageAccountName = Iterables.get(Splitter.on(".").split(URI.create(storageAccountNameURI).getHost()),
+               0);
+         StorageServiceKeys keys = api.getStorageAccountApi(azureGroup).getKeys(storageAccountName);
+
+         // Custom image. Let's find it by uri
+         List<VMImage> customImagesInStorage = BlobHelper.getImages(CONTAINER_NAME, azureGroup, storageAccountName,
+               keys.key1(), CUSTOM_IMAGE_OFFER, locatioName);
+         Optional<VMImage> customImage = tryFind(customImagesInStorage, new Predicate<VMImage>() {
+            @Override
+            public boolean apply(VMImage input) {
+               return input.vhd1().equals(storageProfile.osDisk().image().uri());
+            }
+         });
+
+         return customImage.isPresent() ? Optional.of(vmImageToImge.apply(customImage.get())) : Optional
+               .<Image> absent();
+      }
    }
 
    protected Hardware getHardware(final String vmSize) {

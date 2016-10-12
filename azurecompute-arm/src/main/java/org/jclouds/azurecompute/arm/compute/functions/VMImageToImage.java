@@ -59,7 +59,7 @@ public class VMImageToImage implements Function<VMImage, Image> {
    }
 
    public static String encodeFieldsToUniqueIdCustom(VMImage imageReference){
-      return (imageReference.globallyAvailable() ? "global" : imageReference.location()) + "/" + imageReference.group() + "/" + imageReference.storage() + "/" + imageReference.vhd1() + "/" + imageReference.offer();
+      return (imageReference.globallyAvailable() ? "global" : imageReference.location()) + "/" + imageReference.group() + "/" + imageReference.storage() + "/" + imageReference.offer() + "/" + imageReference.name();
    }
 
    public static VMImage decodeFieldsFromUniqueId(final String id) {
@@ -71,10 +71,10 @@ public class VMImageToImage implements Function<VMImage, Image> {
          0: imageReference.location) + "/" +
          1: imageReference.group + "/" +
          2: imageReference.storage + "/" +
-         3: imageReference.vhd1 + "/" +
-         4: imageReference.offer
+         3: imageReference.offer + "/" +
+         4: imageReference.name
          */
-         vmImage = VMImage.create(fields[1], fields[2], fields[3], null, null, fields[4], fields[0]);
+         vmImage = VMImage.customImage().location(fields[0]).group(fields[1]).storage(fields[2]).vhd1(fields[3]).offer(fields[4]).build();
       } else {
          /* id fields indexes
          0: imageReference.location) + "/" +
@@ -82,7 +82,7 @@ public class VMImageToImage implements Function<VMImage, Image> {
          2: imageReference.offer + "/" +
          3: imageReference.sku + "/" +
          */
-         vmImage = VMImage.create(fields[1], fields[2], fields[3], null, fields[0]);
+         vmImage = VMImage.azureImage().location(fields[0]).publisher(fields[1]).offer(fields[2]).sku(fields[3]).build();
       }
       return vmImage;
    }
@@ -94,24 +94,21 @@ public class VMImageToImage implements Function<VMImage, Image> {
 
    @Override
    public Image apply(final VMImage image) {
-
       if (image.custom()) {
-
          final ImageBuilder builder = new ImageBuilder()
                .location(FluentIterable.from(locations.get())
                      .firstMatch(LocationPredicates.idEquals(image.location()))
                      .get())
                .name(image.name())
-               .description("#" + image.group())
+               .description(image.group())
                .status(Image.Status.AVAILABLE)
-               .version(image.storage())
+               .version("latest")
                .providerId(image.vhd1())
                .id(encodeFieldsToUniqueIdCustom(image));
 
          final OperatingSystem.Builder osBuilder = osFamily().apply(image);
          Image retimage = builder.operatingSystem(osBuilder.build()).build();
          return retimage;
-
       }
       else {
          final ImageBuilder builder = new ImageBuilder()
@@ -154,16 +151,12 @@ public class VMImageToImage implements Function<VMImage, Image> {
                family = OsFamily.RHEL;
             }
 
-            String sku = image.sku();
-            if (image.custom())
-               sku = image.vhd1();
-
             // only 64bit OS images are supported by Azure ARM
             return OperatingSystem.builder().
                   family(family).
                   is64Bit(true).
-                  description(sku).
-                  version(sku);
+                  description(image.custom() ? image.vhd1() : image.sku()).
+                  version(image.custom() ? "latest" : image.sku());
          }
       };
    }

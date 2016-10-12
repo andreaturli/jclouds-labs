@@ -55,12 +55,9 @@ import com.google.inject.Module;
  */
 @Test(groups = "live", singleThreaded = true, testName = "AzureComputeServiceLiveTest")
 public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
-
    
    public AzureComputeServiceLiveTest() {
       provider = "azurecompute-arm";
-      nonBlockDurationSeconds = 300;
-      group = "az-r";
    }
 
    @Override
@@ -104,16 +101,16 @@ public class AzureComputeServiceLiveTest extends BaseComputeServiceLiveTest {
    }
 
    @Override
-   protected void checkUserMetadataContains(NodeMetadata node, ImmutableMap<String, String> userMetadata) {
-      // User metadata not yet supported
-   }
-
-   @Override
    protected Template addRunScriptToTemplate(Template template) {
       template.getOptions().runScript(
             Statements.newStatementList(new Statement[] { AdminAccess.standard(), Statements.exec("sleep 50"),
                   InstallJDK.fromOpenJDK() }));
       return template;
+   }
+   
+   @Override
+   protected void checkUserMetadataContains(NodeMetadata node, ImmutableMap<String, String> userMetadata) {
+      // User metadata not yet supported
    }
 
    @Override
