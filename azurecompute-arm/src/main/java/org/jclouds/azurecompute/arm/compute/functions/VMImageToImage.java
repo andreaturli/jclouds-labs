@@ -16,8 +16,6 @@
  */
 package org.jclouds.azurecompute.arm.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +36,8 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class VMImageToImage implements Function<VMImage, Image> {
 
