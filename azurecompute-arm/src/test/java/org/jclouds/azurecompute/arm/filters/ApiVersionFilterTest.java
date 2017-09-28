@@ -63,7 +63,7 @@ public class ApiVersionFilterTest {
 
       config = createMock(InvocationConfig.class);
       expect(config.getCommandName(noName)).andReturn("VersionedApi.noName");
-      expect(config.getCommandName(named)).andReturn("named:get");
+      expect(config.getCommandName(named)).andReturn("named:getVault");
       replay(config);
    }
 
@@ -76,7 +76,7 @@ public class ApiVersionFilterTest {
    @Test
    public void testOverrideMethodVersion() {
       Properties props = new Properties();
-      props.setProperty(API_VERSION_PREFIX + "named:get", "namedversion");
+      props.setProperty(API_VERSION_PREFIX + "named:getVault", "namedversion");
       props.setProperty(API_VERSION_PREFIX + "VersionedApi.noName", "noNameversion");
       ApiVersionFilter filter = new ApiVersionFilter(config, filterStringsBoundToInjectorByName(props));
 

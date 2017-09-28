@@ -407,7 +407,7 @@ public class AzureComputeServiceAdapter implements ComputeServiceAdapter<Virtual
 
    private List<NetworkInterfaceCard> createNetworkInterfaceCards(final String nodeName, final String location,
          AzureTemplateOptions options) {
-      // Prefer a sorted list of NICs with the ones with public IPs first, to
+      // Prefer a sorted listVaults of NICs with the ones with public IPs first, to
       // make sure the primary NIC is the public one
       final String securityGroup = getOnlyElement(options.getGroups(), null);
       return Lists.transform(publicIpsFirst(options.getIpOptions()), new Function<IpOptions, NetworkInterfaceCard>() {

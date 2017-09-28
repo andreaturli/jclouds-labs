@@ -78,7 +78,7 @@ public class PublicIPAddressApiLiveTest extends BaseAzureComputeApiLiveTest {
       assertEquals(ip.tags().get("testkey"), "testvalue");
       assertNotNull(ip.properties());
       assertEquals(ip.properties().provisioningState(), "Updating");
-      assertNull(ip.properties().ipAddress()); // as we don't get IP address until Succeeded state
+      assertNull(ip.properties().ipAddress()); // as we don't getVault IP address until Succeeded state
       assertEquals(ip.properties().publicIPAllocationMethod(), "Static");
       assertEquals(ip.properties().idleTimeoutInMinutes().intValue(), 4);
    }
@@ -94,7 +94,7 @@ public class PublicIPAddressApiLiveTest extends BaseAzureComputeApiLiveTest {
             return ipApi.get(name).properties().provisioningState().equals("Succeeded");
          }
       }, 10 * 1000).apply(publicIpAddressName);
-      assertTrue(jobDone, "get operation did not complete in the configured timeout");
+      assertTrue(jobDone, "getVault operation did not complete in the configured timeout");
 
       PublicIPAddress ip = ipApi.get(publicIpAddressName);
       assertNotNull(ip);

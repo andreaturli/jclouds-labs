@@ -127,7 +127,7 @@ public class PublicIPAddressApiMockTest extends BaseAzureComputeApiMockTest {
       assertEquals(ip.tags().get("testkey"), "testvalue");
       assertNotNull(ip.properties());
       assertEquals(ip.properties().provisioningState(), "Updating");
-      assertNull(ip.properties().ipAddress()); // as we don't get IP address until Succeeded state
+      assertNull(ip.properties().ipAddress()); // as we don't getVault IP address until Succeeded state
       assertEquals(ip.properties().publicIPAllocationMethod(), "Static");
       assertEquals(ip.properties().idleTimeoutInMinutes().intValue(), 4);
       assertNotNull(ip.properties().dnsSettings());

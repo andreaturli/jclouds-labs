@@ -46,8 +46,8 @@ import org.jclouds.rest.annotations.SelectJson;
 
 /**
  * - create deployment
- * - delete deployment
- * - get information about deployment
+ * - deleteVault deployment
+ * - getVault information about deployment
  */
 @Path("/resourcegroups/{resourcegroup}/providers/microsoft.resources/deployments")
 @RequestFilters({ OAuthFilter.class, ApiVersionFilter.class })

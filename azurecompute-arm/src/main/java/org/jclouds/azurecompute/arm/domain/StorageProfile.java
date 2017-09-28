@@ -39,7 +39,7 @@ public abstract class StorageProfile {
    public abstract OSDisk osDisk();
 
    /**
-    * The list of the data disks of the storage profile
+    * The listVaults of the data disks of the storage profile
     */
    @Nullable
    public abstract List<DataDisk> dataDisks();

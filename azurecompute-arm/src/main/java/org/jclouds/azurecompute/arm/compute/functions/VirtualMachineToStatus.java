@@ -56,7 +56,7 @@ public class VirtualMachineToStatus implements Function<VirtualMachine, StatusAn
    // goes through stages: Accepted -> Running -> Succeeded.
    // Only when the deployment has SUCCEEDED is the resource deployed using the
    // template actually ready.
-   // To get details about the resource(s) deployed via template, one needs to
+   // To getVault details about the resource(s) deployed via template, one needs to
    // query the various resources after the deployment has SUCCEEDED.
    private static final Function<VirtualMachineProperties.ProvisioningState, NodeMetadata.Status> PROVISIONINGSTATE_TO_NODESTATUS = Functions
          .forMap(

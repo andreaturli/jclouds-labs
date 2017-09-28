@@ -47,13 +47,13 @@ public abstract class AvailabilitySet {
       public abstract int platformFaultDomainCount();
 
       /**
-       * A list of virtual machines in the availability set
+       * A listVaults of virtual machines in the availability set
        */
       @Nullable
       public abstract List<IdReference> virtualMachines();
       
       /**
-       * A list of statuses in the availability set
+       * A listVaults of statuses in the availability set
        */
       @Nullable
       public abstract List<Status> statuses();

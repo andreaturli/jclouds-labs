@@ -16,6 +16,36 @@
  */
 package org.jclouds.azurecompute.arm;
 
+import java.net.URI;
+import java.util.Properties;
+
+import org.jclouds.azurecompute.arm.domain.Region;
+import org.jclouds.azurecompute.arm.features.AvailabilitySetApi;
+import org.jclouds.azurecompute.arm.features.DeploymentApi;
+import org.jclouds.azurecompute.arm.features.DiskApi;
+import org.jclouds.azurecompute.arm.features.ImageApi;
+import org.jclouds.azurecompute.arm.features.LoadBalancerApi;
+import org.jclouds.azurecompute.arm.features.LocationApi;
+import org.jclouds.azurecompute.arm.features.MetricDefinitionsApi;
+import org.jclouds.azurecompute.arm.features.MetricsApi;
+import org.jclouds.azurecompute.arm.features.NetworkInterfaceCardApi;
+import org.jclouds.azurecompute.arm.features.NetworkSecurityGroupApi;
+import org.jclouds.azurecompute.arm.features.NetworkSecurityRuleApi;
+import org.jclouds.azurecompute.arm.features.OSImageApi;
+import org.jclouds.azurecompute.arm.features.PublicIPAddressApi;
+import org.jclouds.azurecompute.arm.features.ResourceGroupApi;
+import org.jclouds.azurecompute.arm.features.ResourceProviderApi;
+import org.jclouds.azurecompute.arm.features.StorageAccountApi;
+import org.jclouds.azurecompute.arm.features.SubnetApi;
+import org.jclouds.azurecompute.arm.features.VMSizeApi;
+import org.jclouds.azurecompute.arm.features.VaultApi;
+import org.jclouds.azurecompute.arm.features.VirtualMachineApi;
+import org.jclouds.azurecompute.arm.features.VirtualNetworkApi;
+import org.jclouds.providers.ProviderMetadata;
+import org.jclouds.providers.internal.BaseProviderMetadata;
+
+import com.google.auto.service.AutoService;
+
 import static org.jclouds.Constants.PROPERTY_MAX_RATE_LIMIT_WAIT;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.API_VERSION_PREFIX;
 import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_SUBNET_ADDRESS_PREFIX;
@@ -33,35 +63,6 @@ import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_T
 import static org.jclouds.oauth.v2.config.CredentialType.CLIENT_CREDENTIALS_SECRET;
 import static org.jclouds.oauth.v2.config.OAuthProperties.CREDENTIAL_TYPE;
 import static org.jclouds.oauth.v2.config.OAuthProperties.RESOURCE;
-
-import java.net.URI;
-import java.util.Properties;
-
-import org.jclouds.azurecompute.arm.domain.Region;
-import org.jclouds.azurecompute.arm.features.AvailabilitySetApi;
-import org.jclouds.azurecompute.arm.features.DeploymentApi;
-import org.jclouds.azurecompute.arm.features.ImageApi;
-import org.jclouds.azurecompute.arm.features.LoadBalancerApi;
-import org.jclouds.azurecompute.arm.features.LocationApi;
-import org.jclouds.azurecompute.arm.features.DiskApi;
-import org.jclouds.azurecompute.arm.features.MetricDefinitionsApi;
-import org.jclouds.azurecompute.arm.features.MetricsApi;
-import org.jclouds.azurecompute.arm.features.NetworkInterfaceCardApi;
-import org.jclouds.azurecompute.arm.features.NetworkSecurityGroupApi;
-import org.jclouds.azurecompute.arm.features.NetworkSecurityRuleApi;
-import org.jclouds.azurecompute.arm.features.OSImageApi;
-import org.jclouds.azurecompute.arm.features.PublicIPAddressApi;
-import org.jclouds.azurecompute.arm.features.ResourceGroupApi;
-import org.jclouds.azurecompute.arm.features.ResourceProviderApi;
-import org.jclouds.azurecompute.arm.features.StorageAccountApi;
-import org.jclouds.azurecompute.arm.features.SubnetApi;
-import org.jclouds.azurecompute.arm.features.VMSizeApi;
-import org.jclouds.azurecompute.arm.features.VirtualMachineApi;
-import org.jclouds.azurecompute.arm.features.VirtualNetworkApi;
-import org.jclouds.providers.ProviderMetadata;
-import org.jclouds.providers.internal.BaseProviderMetadata;
-
-import com.google.auto.service.AutoService;
 
 @AutoService(ProviderMetadata.class)
 public class AzureComputeProviderMetadata extends BaseProviderMetadata {
@@ -122,6 +123,7 @@ public class AzureComputeProviderMetadata extends BaseProviderMetadata {
       properties.put(API_VERSION_PREFIX + ImageApi.class.getSimpleName(), "2016-04-30-preview");
       properties.put(API_VERSION_PREFIX + MetricDefinitionsApi.class.getSimpleName(), "2017-05-01-preview");
       properties.put(API_VERSION_PREFIX + MetricsApi.class.getSimpleName(), "2016-09-01");
+      properties.put(API_VERSION_PREFIX + VaultApi.class.getSimpleName(), "2016-10-01");
       
       return properties;
    }

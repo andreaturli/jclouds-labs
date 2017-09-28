@@ -23,6 +23,7 @@ import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -30,9 +31,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks.EmptyListOnNotFoundOr404;
 import org.jclouds.Fallbacks.NullOnNotFoundOr404;
+import org.jclouds.azurecompute.arm.domain.Key;
+import org.jclouds.azurecompute.arm.domain.Vault;
+import org.jclouds.azurecompute.arm.domain.VaultProperties;
 import org.jclouds.azurecompute.arm.filters.ApiVersionFilter;
 import org.jclouds.azurecompute.arm.functions.URIParser;
 import org.jclouds.oauth.v2.filters.OAuthFilter;
+import org.jclouds.rest.annotations.EndpointParam;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.MapBinder;
 import org.jclouds.rest.annotations.PayloadParam;
@@ -41,7 +46,6 @@ import org.jclouds.rest.annotations.ResponseParser;
 import org.jclouds.rest.annotations.SelectJson;
 import org.jclouds.rest.binders.BindToJsonPayload;
 
-@Path("/resourcegroups/{resourcegroup}/providers/Microsoft.KeyVault/vaults")
 @RequestFilters({ OAuthFilter.class, ApiVersionFilter.class })
 @Consumes(MediaType.APPLICATION_JSON)
 public interface VaultApi {
@@ -49,27 +53,54 @@ public interface VaultApi {
    @Named("vault:list")
    @SelectJson("value")
    @GET
+   @Path("/resourcegroups/{resourcegroup}/providers/Microsoft.KeyVault/vaults")
    @Fallback(EmptyListOnNotFoundOr404.class)
-   List<Vault> list();
+   List<Vault> listVaults();
 
    @Named("vault:create_or_update")
    @PUT
    @MapBinder(BindToJsonPayload.class)
-   @Path("/{vaultName}")
-   Vault createOrUpdate(@PathParam("vaultName") String vaultName,
-                       @PayloadParam("location") String location,
-                       @PayloadParam("properties") VaultProperties properties);
+   @Path("/resourcegroups/{resourcegroup}/providers/Microsoft.KeyVault/vaults/{vaultName}")
+   Vault createOrUpdateVault(@PathParam("vaultName") String vaultName,
+                             @PayloadParam("location") String location,
+                             @PayloadParam("properties") VaultProperties properties);
 
    @Named("vault:get")
-   @Path("/{vaultName}")
+   @Path("/resourcegroups/{resourcegroup}/providers/Microsoft.KeyVault/vaults/{vaultName}")
    @GET
    @Fallback(NullOnNotFoundOr404.class)
-   Vault get(@PathParam("vaultName") String vaultName);
+   Vault getVault(@PathParam("vaultName") String vaultName);
 
    @Named("vault:delete")
-   @Path("/{vaultName}")
+   @Path("/resourcegroups/{resourcegroup}/providers/Microsoft.KeyVault/vaults/{vaultName}")
    @DELETE
    @ResponseParser(URIParser.class)
    @Fallback(NullOnNotFoundOr404.class)
-   URI delete(@PathParam("vaultName") String vaultName);
+   URI deleteVault(@PathParam("vaultName") String vaultName);
+
+   @Named("key:list")
+   @SelectJson("value")
+   @GET
+   @Fallback(EmptyListOnNotFoundOr404.class)
+   @Path("/keys")
+   List<Key> listKeys(@EndpointParam URI vaultBaseUrl);
+
+   @Named("key:create")
+   @POST
+   @MapBinder(BindToJsonPayload.class)
+   @Path("/keys/{keyName}/create")
+   Key createKey(@EndpointParam URI vaultBaseUrl, @PathParam("keyName") String keyName);
+
+   @Named("key:get")
+   @Path("/keys/{keyName}")
+   @GET
+   @Fallback(NullOnNotFoundOr404.class)
+   Key getKey(@PathParam("keyName") String keyName);
+
+   @Named("key:delete")
+   @Path("/keys/{keyName}")
+   @DELETE
+   @ResponseParser(URIParser.class)
+   @Fallback(NullOnNotFoundOr404.class)
+   URI deleteKey(@PathParam("keyName") String keyName);
 }

@@ -16,25 +16,8 @@
  */
 package org.jclouds.azurecompute.arm.domain;
 
-import org.jclouds.javax.annotation.Nullable;
-import org.jclouds.json.SerializedNames;
-
 import com.google.auto.value.AutoValue;
 
 @AutoValue
-public abstract class SKU {
-   @Nullable
-   public abstract String location();
-   @Nullable
-   public abstract String name();
-   @Nullable
-   public abstract String id();
-   @Nullable
-   public abstract String family();
-   
-   @SerializedNames({"location", "name", "id", "family"})
-   public static SKU create(final String location, final String name, final String id, final String family) {
-
-      return new AutoValue_SKU(location, name, id, family);
-   }
+public abstract class Key {
 }

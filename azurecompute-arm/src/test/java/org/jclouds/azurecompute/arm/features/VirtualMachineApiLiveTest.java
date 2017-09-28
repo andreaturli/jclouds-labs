@@ -330,7 +330,7 @@ public class VirtualMachineApiLiveTest extends BaseAzureComputeApiLiveTest {
             return !api().get(name).properties().provisioningState().equals(VirtualMachineProperties.ProvisioningState.CREATING);
          }
       }, 60 * 20 * 1000).apply(vmName);
-      assertTrue(ready, "createOrUpdate operation did not complete in the configured timeout");
+      assertTrue(ready, "createOrUpdateVault operation did not complete in the configured timeout");
 
       VirtualMachineProperties.ProvisioningState status = api().get(vmName).properties().provisioningState();
       // Cannot be creating anymore. Should be succeeded or running but not failed.

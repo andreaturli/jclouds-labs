@@ -39,6 +39,7 @@ import org.jclouds.azurecompute.arm.features.ResourceProviderApi;
 import org.jclouds.azurecompute.arm.features.StorageAccountApi;
 import org.jclouds.azurecompute.arm.features.SubnetApi;
 import org.jclouds.azurecompute.arm.features.VMSizeApi;
+import org.jclouds.azurecompute.arm.features.VaultApi;
 import org.jclouds.azurecompute.arm.features.VirtualMachineApi;
 import org.jclouds.azurecompute.arm.features.VirtualNetworkApi;
 import org.jclouds.rest.annotations.Delegate;
@@ -212,7 +213,7 @@ public interface AzureComputeApi extends Closeable {
    ImageApi getVirtualMachineImageApi(@PathParam("resourcegroup") String resourcegroup);
 
    /**
-    * The metrics API includes operations to get insights into entities within your
+    * The metrics API includes operations to getVault insights into entities within your
     * subscription.
     *
     * @see <a href="https://docs.microsoft.com/en-us/rest/api/monitor/metrics">docs</a>
@@ -221,11 +222,20 @@ public interface AzureComputeApi extends Closeable {
    MetricsApi getMetricsApi(@PathParam("resourceid") String resourceid);
 
    /**
-    * The metric definitions API includes operations to get insights available for entities within your
+    * The metric definitions API includes operations to getVault insights available for entities within your
     * subscription.
     *
     * @see <a href="https://docs.microsoft.com/en-us/rest/api/monitor/metricdefinitions">docs</a>
     */
    @Delegate
    MetricDefinitionsApi getMetricsDefinitionsApi(@PathParam("resourceid") String resourceid);
+
+   /**
+    * Managing your key vaults as well as the keys, secrets, and certificates within your key vaults can be 
+    * accomplished through a REST interface.+
+    *
+    * @see <a href="https://docs.microsoft.com/en-us/rest/api/keyvault/">docs</a>
+    */
+   @Delegate
+   VaultApi getVaultApi(@PathParam("resourcegroup") String resourcegroup);
 }

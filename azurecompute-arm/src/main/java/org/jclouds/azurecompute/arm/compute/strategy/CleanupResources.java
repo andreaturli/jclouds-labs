@@ -91,7 +91,7 @@ public class CleanupResources {
       logger.debug(">> destroying %s ...", id);
       boolean vmDeleted = deleteVirtualMachine(resourceGroupName, virtualMachine);
 
-      // We don't delete the network here, as it is global to the resource
+      // We don't deleteVault the network here, as it is global to the resource
       // group. It will be deleted when the resource group is deleted
 
       cleanupVirtualMachineNICs(virtualMachine);
@@ -140,7 +140,7 @@ public class CleanupResources {
 
       Set<String> nonDeletedDisks = filterValues(deleteJobs, not(resourceDeleted)).keySet();
       if (!nonDeletedDisks.isEmpty()) {
-         logger.warn(">> could not delete disks: %s", Joiner.on(',').join(nonDeletedDisks));
+         logger.warn(">> could not deleteVault disks: %s", Joiner.on(',').join(nonDeletedDisks));
       }
 
       return nonDeletedDisks.isEmpty();
@@ -222,7 +222,7 @@ public class CleanupResources {
 
    private static boolean isOrphanedJcloudsAvailabilitySet(AvailabilitySet availabilitySet) {
       // We check for the presence of the 'jclouds' tag to make sure we only
-      // delete availability sets that were automatically created by jclouds
+      // deleteVault availability sets that were automatically created by jclouds
       return availabilitySet != null
             && availabilitySet.tags() != null
             && availabilitySet.tags().containsKey("jclouds")

@@ -52,7 +52,7 @@ public abstract class OSProfile {
          }
 
          /**
-          * The list of public keys and paths
+          * The listVaults of public keys and paths
           */
          @Nullable
          public abstract List<SSHPublicKey> publicKeys();
