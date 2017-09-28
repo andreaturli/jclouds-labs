@@ -18,6 +18,7 @@ package org.jclouds.azurecompute.arm.features;
 
 import java.net.URI;
 
+import org.jclouds.azurecompute.arm.domain.Key;
 import org.jclouds.azurecompute.arm.domain.SKU;
 import org.jclouds.azurecompute.arm.domain.Vault;
 import org.jclouds.azurecompute.arm.domain.VaultProperties;
@@ -100,11 +101,12 @@ public class VaultApiLiveTest extends BaseAzureComputeApiLiveTest {
    }
 
    @Test(dependsOnMethods = "testGet")
-   public void testListKeys() {
-      api().listKeys(vaultUri);
+   public void testGetKey() {
+      Key key = api().getKey(vaultUri, "andrea");
+      assertNotNull(key);
    }
 
-   @Test(dependsOnMethods = "testListKeys")
+   @Test(dependsOnMethods = "testGetKey")
    public void testCreateKey() {
       api().createKey(vaultUri, "myKey");
    }

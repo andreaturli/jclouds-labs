@@ -16,8 +16,45 @@
  */
 package org.jclouds.azurecompute.arm.domain;
 
+import java.util.Date;
+
+import org.jclouds.javax.annotation.Nullable;
+import org.jclouds.json.SerializedNames;
+
 import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class Key {
+
+   @AutoValue
+   public abstract static class KeyAttributes {
+      
+      public abstract Boolean enabled();
+      public abstract Date created();
+      public abstract Date updated();
+      
+      @SerializedNames({"enabled", "created", "updated"})
+      public static KeyAttributes create(final Boolean enabled, final Date created, final Date updated) {
+         return new AutoValue_Key_KeyAttributes(enabled, created, updated);
+      }
+
+      KeyAttributes() {
+
+      }
+   }
+
+   @Nullable
+   public abstract String kid();
+   public abstract KeyAttributes attributes();
+
+   @SerializedNames({ "kid", "attributes"})
+   public static Key create(final String kid, final KeyAttributes attributes) {
+      return new AutoValue_Key(kid, attributes);
+   }
+
+   Key() {
+
+   }
+
+
 }

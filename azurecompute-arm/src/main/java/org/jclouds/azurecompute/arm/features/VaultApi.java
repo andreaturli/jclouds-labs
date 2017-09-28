@@ -95,7 +95,7 @@ public interface VaultApi {
    @Path("/keys/{keyName}")
    @GET
    @Fallback(NullOnNotFoundOr404.class)
-   Key getKey(@PathParam("keyName") String keyName);
+   Key getKey(@EndpointParam URI vaultBaseUrl, @PathParam("keyName") String keyName);
 
    @Named("key:delete")
    @Path("/keys/{keyName}")
