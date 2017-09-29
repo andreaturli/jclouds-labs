@@ -35,6 +35,7 @@ import org.jclouds.azurecompute.arm.domain.Key;
 import org.jclouds.azurecompute.arm.domain.Vault;
 import org.jclouds.azurecompute.arm.domain.VaultProperties;
 import org.jclouds.azurecompute.arm.filters.ApiVersionFilter;
+import org.jclouds.azurecompute.arm.filters.KeyVaultFilter;
 import org.jclouds.azurecompute.arm.functions.URIParser;
 import org.jclouds.oauth.v2.filters.OAuthFilter;
 import org.jclouds.rest.annotations.EndpointParam;
@@ -82,8 +83,9 @@ public interface VaultApi {
    @SelectJson("value")
    @GET
    @Fallback(EmptyListOnNotFoundOr404.class)
+   @RequestFilters({ KeyVaultFilter.class, ApiVersionFilter.class })
    @Path("/keys")
-   List<Key> listKeys(@EndpointParam URI vaultBaseUrl);
+   List<Key> listKeys(@EndpointParam URI keyVaultUri);
 
    @Named("key:create")
    @POST

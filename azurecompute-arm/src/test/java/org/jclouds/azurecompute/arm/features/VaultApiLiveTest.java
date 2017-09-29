@@ -102,8 +102,9 @@ public class VaultApiLiveTest extends BaseAzureComputeApiLiveTest {
 
    @Test(dependsOnMethods = "testGet")
    public void testGetKey() {
-      Key key = api().getKey(vaultUri, "andrea");
-      assertNotNull(key);
+      for (Key key : api().listKeys(vaultUri)) {
+         assertNotNull(key);   
+      }
    }
 
    @Test(dependsOnMethods = "testGetKey")
