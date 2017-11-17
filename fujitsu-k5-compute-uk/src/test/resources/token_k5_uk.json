@@ -1,0 +1,1 @@
+{"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"myUsername","password":"myApiKey","domain":{"name":"myTenant"}}}}}}

@@ -65,6 +65,8 @@
     <module>cloudsigma2-wdc</module>
     <module>cloudsigma2-zrh</module>
     <module>dimensiondata</module>
+    <module>fujitsu-k5-compute-uk</module>
+    <module>fujitsu-k5-networking-uk</module>
     <module>jdbc</module>
     <module>h2-jdbc</module>
     <module>joyent-cloudapi</module>
