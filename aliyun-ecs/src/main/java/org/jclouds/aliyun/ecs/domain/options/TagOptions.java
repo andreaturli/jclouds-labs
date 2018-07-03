@@ -18,6 +18,11 @@ package org.jclouds.aliyun.ecs.domain.options;
 
 import org.jclouds.http.options.BaseHttpRequestOptions;
 
+import java.util.Set;
+
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.io.BaseEncoding.base64;
+
 public class TagOptions extends BaseHttpRequestOptions {
 
    public static final String TAG_1_KEY_PARAM = "Tag.1.Key";
@@ -32,52 +37,65 @@ public class TagOptions extends BaseHttpRequestOptions {
    public static final String TAG_5_VALUE_PARAM = "Tag.5.Value";
 
    public TagOptions tag1Key(String tag1Key) {
-      queryParameters.put(TAG_1_KEY_PARAM, tag1Key);
+      queryParameters.put(TAG_1_KEY_PARAM, encodeTag(tag1Key));
       return this;
    }
 
    public TagOptions tag1Value(String tag1Value) {
-      queryParameters.put(TAG_1_VALUE_PARAM, tag1Value);
+      queryParameters.put(TAG_1_VALUE_PARAM, encodeTag(tag1Value));
       return this;
    }
 
    public TagOptions tag2Key(String tag2Key) {
-      queryParameters.put(TAG_2_KEY_PARAM, tag2Key);
+      queryParameters.put(TAG_2_KEY_PARAM, encodeTag(tag2Key));
       return this;
    }
 
    public TagOptions tag2Value(String tag2Value) {
-      queryParameters.put(TAG_2_VALUE_PARAM, tag2Value);
+      queryParameters.put(TAG_2_VALUE_PARAM, encodeTag(tag2Value));
       return this;
    }
 
    public TagOptions tag3Key(String tag3Key) {
-      queryParameters.put(TAG_3_KEY_PARAM, tag3Key);
+      queryParameters.put(TAG_3_KEY_PARAM, encodeTag(tag3Key));
       return this;
    }
 
    public TagOptions tag3Value(String tag3Value) {
-      queryParameters.put(TAG_3_VALUE_PARAM, tag3Value);
+      queryParameters.put(TAG_3_VALUE_PARAM, encodeTag(tag3Value));
       return this;
    }
 
    public TagOptions tag4Key(String tag4Key) {
-      queryParameters.put(TAG_4_KEY_PARAM, tag4Key);
+      queryParameters.put(TAG_4_KEY_PARAM, encodeTag(tag4Key));
       return this;
    }
 
    public TagOptions tag4Value(String tag4Value) {
-      queryParameters.put(TAG_4_VALUE_PARAM, tag4Value);
+      queryParameters.put(TAG_4_VALUE_PARAM, encodeTag(tag4Value));
       return this;
    }
 
    public TagOptions tag5Key(String tag5Key) {
-      queryParameters.put(TAG_5_KEY_PARAM, tag5Key);
+      queryParameters.put(TAG_5_KEY_PARAM, encodeTag(tag5Key));
       return this;
    }
 
    public TagOptions tag5Value(String tag5Value) {
-      queryParameters.put(TAG_5_VALUE_PARAM, tag5Value);
+      queryParameters.put(TAG_5_VALUE_PARAM, encodeTag(tag5Value));
+      return this;
+   }
+
+   public TagOptions keys(Set<String> keys) {
+      int i = 1;
+      String keyTemplate = "Tag.%d.Key";
+      String valueTemplate = "Tag.%d.Value";
+
+      for (String key : keys) {
+         queryParameters.put(String.format(keyTemplate, i), encodeTag(key));
+         queryParameters.put(String.format(valueTemplate, i), "");
+         i++;
+      }
       return this;
    }
 
@@ -123,5 +141,19 @@ public class TagOptions extends BaseHttpRequestOptions {
          return new TagOptions().tag5Value(tag5Value);
       }
 
+      public static TagOptions keys(Set<String> keys) {
+         return new TagOptions().keys(keys);
+      }
    }
+
+   /**
+    * This is strictly not needed but apparently tags with `-` can create a problem when using API, so I've decided to use
+    * base64 encoding
+    * @param value
+    * @return
+    */
+   public String encodeTag(String value) {
+      return base64().encode(value.getBytes(UTF_8));
+   }
+
 }

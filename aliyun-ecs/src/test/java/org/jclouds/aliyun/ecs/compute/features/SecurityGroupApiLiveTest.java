@@ -56,7 +56,7 @@ public class SecurityGroupApiLiveTest extends BaseECSComputeServiceApiLiveTest {
    @AfterClass
    public void tearDown() {
       if (securityGroupId != null) {
-         api().delete(Regions.EU_CENTRAL_1.getName(), securityGroupId);
+         api().delete(Regions.EU_CENTRAL_1.getName(), "sg-gw8gamrxjlrud0xfn4zf");
       }
    }
 

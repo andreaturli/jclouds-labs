@@ -23,8 +23,7 @@ import org.jclouds.json.SerializedNames;
 @AutoValue
 public abstract class KeyPair {
 
-   KeyPair() {
-   }
+   KeyPair() {}
 
    @SerializedNames({ "KeyPairName", "KeyPairFingerPrint", "PrivateKeyBody" })
    public static KeyPair create(String keyPairName, String keyPairFingerPrint, String privateKeyBody) {
