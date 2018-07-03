@@ -14,24 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.predicates;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.InstanceApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.common.base.Predicate;
+import org.jclouds.aliyun.ecs.domain.InstanceStatus;
 
-import java.io.Closeable;
+public class InstanceStatusPredicate implements Predicate<InstanceStatus> {
+   private final String instanceId;
 
-public interface ECSComputeServiceApi extends Closeable {
+   public InstanceStatusPredicate(String instanceId) {
+      this.instanceId = instanceId;
+   }
 
-   @Delegate
-   ImageApi imageApi();
-
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
-
-   @Delegate
-   InstanceApi instanceApi();
-
+   @Override
+   public boolean apply(InstanceStatus instanceStatus) {
+      return instanceStatus.instanceId().equalsIgnoreCase(instanceId);
+   }
 }

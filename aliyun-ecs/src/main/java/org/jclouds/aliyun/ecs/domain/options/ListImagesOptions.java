@@ -33,12 +33,12 @@ public class ListImagesOptions extends BaseHttpRequestOptions {
 
    public ListImagesOptions imageIds(String... instanceIds) {
       String instanceIdsAsString = Joiner.on(",")
-            .join(Iterables.transform(Arrays.asList(instanceIds), new Function<String, String>() {
-               @Override
-               public String apply(String s) {
-                  return new StringBuilder(s.length() + 1).append('"').append(s).append('"').toString();
-               }
-            }));
+              .join(Iterables.transform(Arrays.asList(instanceIds), new Function<String, String>() {
+                 @Override
+                 public String apply(String s) {
+                    return new StringBuilder(s.length() + 1).append('"').append(s).append('"').toString();
+                 }
+              }));
       queryParameters.put(IMAGE_ID_PARAM, String.format("[%s]", instanceIdsAsString));
       return this;
    }

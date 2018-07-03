@@ -17,9 +17,21 @@
 package org.jclouds.aliyun.ecs.domain;
 
 import com.google.auto.value.AutoValue;
+import org.jclouds.json.SerializedNames;
 
 @AutoValue
-public abstract class DedicatedHostGeneration {
+public abstract class DedicatedHostAttribute {
 
-   DedicatedHostGeneration() {}
+   DedicatedHostAttribute() {
+   }
+
+   @SerializedNames({ "DedicatedHostId", "DedicatedHostName" })
+   public static DedicatedHostAttribute create(String dedicatedHostId, String dedicatedHostName) {
+      return new AutoValue_DedicatedHostAttribute(dedicatedHostId, dedicatedHostName);
+   }
+
+   public abstract String dedicatedHostId();
+
+   public abstract String dedicatedHostName();
+
 }

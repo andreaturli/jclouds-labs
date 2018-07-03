@@ -99,6 +99,5 @@ public interface ImageApi {
             };
          }
       }
-
    }
 }
