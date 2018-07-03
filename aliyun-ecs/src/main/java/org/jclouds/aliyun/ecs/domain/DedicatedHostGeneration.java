@@ -14,20 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class DedicatedHostGeneration {
 
-public interface ECSComputeServiceApi extends Closeable {
-
-   @Delegate
-   ImageApi imageApi();
-
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
-
+   DedicatedHostGeneration() {}
 }
