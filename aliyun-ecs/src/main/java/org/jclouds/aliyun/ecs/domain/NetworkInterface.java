@@ -14,24 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.InstanceApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import org.jclouds.javax.annotation.Nullable;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class NetworkInterface {
 
-public interface ECSComputeServiceApi extends Closeable {
+   NetworkInterface() {
+   }
 
-   @Delegate
-   ImageApi imageApi();
+   @SerializedNames({ "MacAddress", "PrimaryIpAddress", "NetworkInterfaceId" })
+   public static NetworkInterface create(String macAddress, String primaryIpAddress, String networkInterfaceId) {
+      return new AutoValue_NetworkInterface(macAddress, primaryIpAddress, networkInterfaceId);
+   }
 
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
+   @Nullable
+   public abstract String macAddress();
 
-   @Delegate
-   InstanceApi instanceApi();
+   public abstract String primaryIpAddress();
+
+   public abstract String networkInterfaceId();
 
 }
