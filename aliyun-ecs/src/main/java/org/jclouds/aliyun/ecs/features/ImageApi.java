@@ -21,9 +21,9 @@ import com.google.common.base.Optional;
 import com.google.inject.TypeLiteral;
 import org.jclouds.Fallbacks;
 import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
+import org.jclouds.aliyun.ecs.ECSServiceApiMetadata;
 import org.jclouds.aliyun.ecs.domain.Image;
 import org.jclouds.aliyun.ecs.domain.Images;
-import org.jclouds.aliyun.ecs.domain.internal.PaginatedCollection;
 import org.jclouds.aliyun.ecs.domain.options.ListImagesOptions;
 import org.jclouds.aliyun.ecs.domain.options.PaginationOptions;
 import org.jclouds.aliyun.ecs.filters.FormSign;
@@ -52,7 +52,7 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequestFilters(FormSign.class)
 @QueryParams(keys = {"Version", "Format", "SignatureVersion", "ServiceCode", "SignatureMethod"},
-        values = {"2014-05-26", "JSON", "1.0", "ecs", "HMAC-SHA1"})
+        values = { ECSServiceApiMetadata.DEFAULT_API_VERSION, "JSON", "1.0", "ecs", "HMAC-SHA1"})
 public interface ImageApi {
 
    @Named("image:list")
@@ -60,7 +60,7 @@ public interface ImageApi {
    @QueryParams(keys = "Action", values = "DescribeImages")
    @ResponseParser(ParseImages.class)
    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-   PaginatedCollection<Image> list(@QueryParam("RegionId") String region, ListImagesOptions... options);
+   IterableWithMarker<Image> list(@QueryParam("RegionId") String region, ListImagesOptions options);
 
    @Named("image:list")
    @GET
@@ -80,10 +80,10 @@ public interface ImageApi {
 
       static class ToPagedIterable extends Arg0ToPagedIterable<Image, ToPagedIterable> {
 
-         private ECSComputeServiceApi api;
+         private final ECSComputeServiceApi api;
 
          @Inject
-         ToPagedIterable(final ECSComputeServiceApi api) {
+         ToPagedIterable(ECSComputeServiceApi api) {
             this.api = api;
          }
 

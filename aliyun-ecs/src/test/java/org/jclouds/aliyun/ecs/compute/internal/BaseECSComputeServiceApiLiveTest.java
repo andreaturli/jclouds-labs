@@ -16,12 +16,8 @@
  */
 package org.jclouds.aliyun.ecs.compute.internal;
 
-import com.google.common.base.Predicate;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
 import org.jclouds.apis.BaseApiLiveTest;
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -29,16 +25,7 @@ import org.jclouds.compute.config.ComputeServiceProperties;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_TERMINATED;
-import static org.testng.Assert.assertTrue;
-
 public class BaseECSComputeServiceApiLiveTest extends BaseApiLiveTest<ECSComputeServiceApi> {
-
-   private Predicate<String> instanceRunning;
-   private Predicate<String> instanceSuspended;
-   private Predicate<String> instanceTerminated;
 
    public BaseECSComputeServiceApiLiveTest() {
       provider = "aliyun-ecs";
@@ -56,28 +43,7 @@ public class BaseECSComputeServiceApiLiveTest extends BaseApiLiveTest<ECSCompute
    @Override
    protected ECSComputeServiceApi create(Properties props, Iterable<Module> modules) {
       Injector injector = newBuilder().modules(modules).overrides(props).buildInjector();
-      instanceRunning = injector.getInstance(Key.get(new TypeLiteral<Predicate<String>>() {
-      }, Names.named(TIMEOUT_NODE_RUNNING)));
-      instanceSuspended = injector.getInstance(Key.get(new TypeLiteral<Predicate<String>>() {
-      }, Names.named(TIMEOUT_NODE_SUSPENDED)));
-      instanceTerminated = injector.getInstance(Key.get(new TypeLiteral<Predicate<String>>() {
-      }, Names.named(TIMEOUT_NODE_TERMINATED)));
       return injector.getInstance(ECSComputeServiceApi.class);
-   }
-
-   protected void assertNodeRunning(String instanceId) {
-      assertTrue(instanceRunning.apply(instanceId),
-            String.format("Instance %s did not start in the configured timeout", instanceId));
-   }
-
-   protected void assertNodeSuspended(String instanceId) {
-      assertTrue(instanceSuspended.apply(instanceId),
-            String.format("Instance %s was not suspended in the configured timeout", instanceId));
-   }
-
-   protected void assertNodeTerminated(String instanceId) {
-      assertTrue(instanceTerminated.apply(instanceId),
-            String.format("Instance %s was not terminated in the configured timeout", instanceId));
    }
 
 }

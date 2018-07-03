@@ -34,6 +34,8 @@ import static org.jclouds.reflect.Reflection2.typeToken;
 
 public class ECSServiceApiMetadata extends BaseHttpApiMetadata<ECSComputeServiceApi> {
 
+   public static final String DEFAULT_API_VERSION = "2014-05-26";
+
    public ECSServiceApiMetadata() {
       this(new Builder());
    }
@@ -44,8 +46,7 @@ public class ECSServiceApiMetadata extends BaseHttpApiMetadata<ECSComputeService
 
    public static Properties defaultProperties() {
       Properties properties = BaseHttpApiMetadata.defaultProperties();
-      properties.put(TEMPLATE,
-              "osFamily=CENTOS,os64Bit=true,osVersionMatches=7.4,hardwareId=ecs.t5-lc2m1.nano,locationId=eu-central-1");
+      properties.put(TEMPLATE, "osFamily=CENTOS,os64Bit=true,osVersionMatches=7.4");
       properties.put(TIMEOUT_NODE_RUNNING, 900000); // 15 mins
       properties.put(TIMEOUT_NODE_SUSPENDED, 900000); // 15 mins
       return properties;
@@ -63,6 +64,7 @@ public class ECSServiceApiMetadata extends BaseHttpApiMetadata<ECSComputeService
                  .name("Alibaba Elastic Compute Service API")
                  .identityName("user name")
                  .credentialName("user password")
+                 .version(DEFAULT_API_VERSION)
                  .documentation(URI.create("https://www.alibabacloud.com/help"))
                  .defaultEndpoint("https://ecs.aliyuncs.com")
                  .defaultProperties(ECSServiceApiMetadata.defaultProperties())

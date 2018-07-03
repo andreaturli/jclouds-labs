@@ -42,7 +42,7 @@ public class ECSComputeServiceParserModule extends AbstractModule {
    public static class AliyunDateAdapter extends GsonModule.Iso8601DateAdapter {
 
       @Inject
-      private AliyunDateAdapter(DateService dateService) {
+      AliyunDateAdapter(DateService dateService) {
          super(dateService);
       }
 

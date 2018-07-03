@@ -21,10 +21,10 @@ import org.jclouds.aliyun.ecs.ECSServiceApiMetadata;
 import org.jclouds.providers.internal.BaseProviderMetadataTest;
 import org.testng.annotations.Test;
 
-@Test(groups = "unit", testName = "ECStComputeProviderMetadataTest")
-public class ECStComputeProviderMetadataTest extends BaseProviderMetadataTest {
+@Test(groups = "unit", testName = "ECSComputeProviderMetadataTest")
+public class ECSComputeProviderMetadataTest extends BaseProviderMetadataTest {
 
-   public ECStComputeProviderMetadataTest() {
+   public ECSComputeProviderMetadataTest() {
       super(new ECSComputeServiceProviderMetadata(), new ECSServiceApiMetadata());
    }
 }

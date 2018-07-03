@@ -21,8 +21,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.JsonParser;
 import com.google.inject.Module;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
@@ -41,8 +39,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static org.jclouds.Constants.PROPERTY_MAX_RETRIES;
 import static org.testng.Assert.assertEquals;
@@ -52,8 +48,6 @@ public class BaseECSComputeServiceApiMockTest {
    private static final String DEFAULT_ENDPOINT = new ECSComputeServiceProviderMetadata().getEndpoint();
 
    private final Set<Module> modules = ImmutableSet.<Module>of(new ExecutorServiceModule(newDirectExecutorService()));
-   // So that we can ignore formatting.
-   private final JsonParser parser = new JsonParser();
    protected MockWebServer server;
    protected ECSComputeServiceApi api;
    private Json json;
@@ -93,10 +87,6 @@ public class BaseECSComputeServiceApiMockTest {
       return new MockResponse().setStatus("HTTP/1.1 404 Not Found");
    }
 
-   protected MockResponse response204() {
-      return new MockResponse().setStatus("HTTP/1.1 204 No Content");
-   }
-
    protected String stringFromResource(String resourceName) {
       try {
          return Resources.toString(getClass().getResource(resourceName), Charsets.UTF_8)
@@ -104,20 +94,6 @@ public class BaseECSComputeServiceApiMockTest {
       } catch (IOException e) {
          throw Throwables.propagate(e);
       }
-   }
-
-   protected <T> T onlyObjectFromResource(String resourceName, TypeToken<Map<String, T>> type) {
-      // Assume JSON objects passed here will be in the form: { "entity": { ... } }
-      String text = stringFromResource(resourceName);
-      Map<String, T> object = json.fromJson(text, type.getType());
-      checkArgument(!object.isEmpty(), "The given json does not contain any object: %s", text);
-      checkArgument(object.keySet().size() == 1, "The given json does not contain more than one object: %s", text);
-      return object.get(getOnlyElement(object.keySet()));
-   }
-
-   protected <T> T objectFromResource(String resourceName, Class<T> type) {
-      String text = stringFromResource(resourceName);
-      return json.fromJson(text, type);
    }
 
    protected RecordedRequest assertSent(MockWebServer server, String method, String action) throws InterruptedException {
@@ -139,11 +115,4 @@ public class BaseECSComputeServiceApiMockTest {
       return request;
    }
 
-   protected RecordedRequest assertSent(MockWebServer server, String method, String path, String json)
-         throws InterruptedException {
-      RecordedRequest request = assertSent(server, method, path);
-      assertEquals(request.getHeader("Content-Type"), "application/json");
-      assertEquals(parser.parse(new String(request.getBody(), Charsets.UTF_8)), parser.parse(json));
-      return request;
-   }
 }

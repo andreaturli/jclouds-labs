@@ -26,7 +26,7 @@
         <version>2.2.0-SNAPSHOT</version>
     </parent>
     <artifactId>aliyun-ecs</artifactId>
-    <name>Cloudsoft :: jclouds Alibaba Elastic Compute Service API</name>
+    <name>jclouds Alibaba Elastic Compute Service API</name>
     <description>jclouds components to access an implementation of Alibaba Elastic Compute Service</description>
     <packaging>bundle</packaging>
 
@@ -106,37 +106,6 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.5.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <obrRepository>NONE</obrRepository>
-                    <instructions>
-                        <!--<Bundle-Activator>${jclouds.osgi.activator}</Bundle-Activator>-->
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <!--<Export-Package>${jclouds.osgi.export}</Export-Package>-->
-                        <Import-Package>${guava.osgi.import},${jclouds.osgi.import}</Import-Package>
-                        <DynamicImport-Package>*</DynamicImport-Package>
-                        <!--<Fragment-Host>${jclouds.osgi.fragment}</Fragment-Host>-->
-                    </instructions>
-                </configuration>
-            </plugin>
-            <!--TODO to be removed-->
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
     <profiles>
         <profile>
             <id>live</id>

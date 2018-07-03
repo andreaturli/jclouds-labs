@@ -16,26 +16,17 @@
  */
 package org.jclouds.aliyun.ecs.config;
 
-import com.google.inject.Scopes;
 import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
 import org.jclouds.aliyun.ecs.handlers.ECSComputeServiceErrorHandler;
 import org.jclouds.http.HttpErrorHandler;
 import org.jclouds.http.annotation.ClientError;
 import org.jclouds.http.annotation.Redirection;
 import org.jclouds.http.annotation.ServerError;
-import org.jclouds.location.suppliers.ImplicitLocationSupplier;
-import org.jclouds.location.suppliers.implicit.FirstRegion;
 import org.jclouds.rest.ConfiguresHttpApi;
 import org.jclouds.rest.config.HttpApiModule;
 
 @ConfiguresHttpApi
 public class ECSComputeServiceHttpApiModule extends HttpApiModule<ECSComputeServiceApi> {
-
-   @Override
-   protected void configure() {
-      super.configure();
-      bind(ImplicitLocationSupplier.class).to(FirstRegion.class).in(Scopes.SINGLETON);
-   }
 
    @Override
    protected void bindErrorHandlers() {

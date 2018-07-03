@@ -27,7 +27,7 @@ public class PaginationOptions extends BaseHttpRequestOptions {
 
    public PaginationOptions pageNumber(int pageNumber) {
       checkState(pageNumber > 0, "pageSize must be > 0");
-      checkState(pageNumber <= 10000, "limit must be <= 50");
+      checkState(pageNumber <= 50, "limit must be <= 50");
       this.queryParameters.put(PAGE_NUMBER, Integer.toString(pageNumber));
       return this;
    }
@@ -38,7 +38,7 @@ public class PaginationOptions extends BaseHttpRequestOptions {
 
    public PaginationOptions pageSize(int pageSize) {
       checkState(pageSize >= 0, "pageSize must be >= 0");
-      checkState(pageSize <= 10000, "limit must be <= 10000");
+      checkState(pageSize <= 100, "pageSize must be <= 100");
       queryParameters.put(PAGE_SIZE, Integer.toString(pageSize));
       return this;
    }
