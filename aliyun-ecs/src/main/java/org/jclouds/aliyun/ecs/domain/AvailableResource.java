@@ -14,36 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.InstanceApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.aliyun.ecs.features.TagApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableMap;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+import java.util.List;
+import java.util.Map;
 
-public interface ECSComputeServiceApi extends Closeable {
+@AutoValue
+public abstract class AvailableResource {
 
-   @Delegate
-   ImageApi imageApi();
+   AvailableResource() {
+   }
 
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
+   @SerializedNames({ "Type", "SupportedResources" })
+   public static AvailableResource create(String type, Map<String, List<SupportedResource>> supportedResources) {
+      return new AutoValue_AvailableResource(type, supportedResources == null ?
+            ImmutableMap.<String, List<SupportedResource>>of() :
+            ImmutableMap.copyOf(supportedResources));
+   }
 
-   @Delegate
-   SecurityGroupApi securityGroupApi();
+   public abstract String type();
 
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
-
-   @Delegate
-   TagApi tagApi();
-
-   @Delegate
-   InstanceApi instanceApi();
+   public abstract Map<String, List<SupportedResource>> supportedResources();
 
 }

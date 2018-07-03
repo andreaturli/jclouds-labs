@@ -71,7 +71,7 @@ public class TagApiLiveTest extends BaseECSComputeServiceApiLiveTest {
                  @Override
                  public boolean apply(Tag input) {
                     found.incrementAndGet();
-                    return !isNullOrEmpty(input.tagKey());
+                    return !isNullOrEmpty(input.key());
                  }
               }).isEmpty(), "All tags must have the 'key' field populated");
       assertTrue(found.get() > 0, "Expected some tags to be returned");

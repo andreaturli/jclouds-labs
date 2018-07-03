@@ -17,21 +17,31 @@
 package org.jclouds.aliyun.ecs.domain;
 
 import com.google.auto.value.AutoValue;
-import org.jclouds.javax.annotation.Nullable;
+import com.google.common.collect.ImmutableMap;
 import org.jclouds.json.SerializedNames;
 
+import java.util.List;
+import java.util.Map;
+
 @AutoValue
-public abstract class Tag {
+public abstract class AvailableZone {
 
-   Tag() {}
-
-   @SerializedNames({ "TagKey", "TagValue" })
-   public static Tag create(String key, String value) {
-      return new AutoValue_Tag(key, value);
+   AvailableZone() {
    }
 
-   public abstract String key();
+   @SerializedNames({ "Status", "RegionId", "AvailableResources", "ZoneId" })
+   public static AvailableZone create(String status, String regionId,
+                                      Map<String, List<AvailableResource>> availableResources, String zoneId) {
+      return new AutoValue_AvailableZone(status, regionId, availableResources == null ?
+            ImmutableMap.<String, List<AvailableResource>>of() :
+            ImmutableMap.copyOf(availableResources), zoneId);
+   }
 
-   @Nullable
-   public abstract String value();
+   public abstract String status();
+
+   public abstract String regionId();
+
+   public abstract Map<String, List<AvailableResource>> availableResources();
+
+   public abstract String zoneId();
 }

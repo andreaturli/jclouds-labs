@@ -18,6 +18,7 @@ package org.jclouds.aliyun.ecs;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Module;
+import org.jclouds.aliyun.ecs.compute.config.ECSServiceContextModule;
 import org.jclouds.aliyun.ecs.config.ECSComputeServiceHttpApiModule;
 import org.jclouds.aliyun.ecs.config.ECSComputeServiceParserModule;
 import org.jclouds.apis.ApiMetadata;
@@ -72,6 +73,7 @@ public class ECSServiceApiMetadata extends BaseHttpApiMetadata<ECSComputeService
                  .defaultModules(ImmutableSet.<Class<? extends Module>>builder()
                          .add(ECSComputeServiceHttpApiModule.class)
                          .add(ECSComputeServiceParserModule.class)
+                         .add(ECSServiceContextModule.class)
                          .build());
       }
 

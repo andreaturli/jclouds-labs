@@ -14,36 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.InstanceApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.aliyun.ecs.features.TagApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class SupportedResource {
 
-public interface ECSComputeServiceApi extends Closeable {
+   SupportedResource() {
+   }
 
-   @Delegate
-   ImageApi imageApi();
+   @SerializedNames({ "Status", "Value" })
+   public static SupportedResource create(String status, String value) {
+      return new AutoValue_SupportedResource(status, value);
+   }
 
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
+   public abstract String status();
 
-   @Delegate
-   SecurityGroupApi securityGroupApi();
-
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
-
-   @Delegate
-   TagApi tagApi();
-
-   @Delegate
-   InstanceApi instanceApi();
-
+   public abstract String value();
 }

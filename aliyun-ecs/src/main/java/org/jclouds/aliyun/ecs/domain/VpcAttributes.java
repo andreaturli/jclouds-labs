@@ -17,21 +17,32 @@
 package org.jclouds.aliyun.ecs.domain;
 
 import com.google.auto.value.AutoValue;
-import org.jclouds.javax.annotation.Nullable;
+import com.google.common.collect.ImmutableMap;
 import org.jclouds.json.SerializedNames;
 
+import java.util.List;
+import java.util.Map;
+
 @AutoValue
-public abstract class Tag {
+public abstract class VpcAttributes {
 
-   Tag() {}
-
-   @SerializedNames({ "TagKey", "TagValue" })
-   public static Tag create(String key, String value) {
-      return new AutoValue_Tag(key, value);
+   VpcAttributes() {
    }
 
-   public abstract String key();
+   @SerializedNames({ "NatIpAddress", "PrivateIpAddress", "VSwitchId", "VpcId" })
+   public static VpcAttributes create(String natIpAddress, Map<String, List<String>> privateIpAddress, String vSwitchId,
+                                      String vpcId) {
+      return new AutoValue_VpcAttributes(natIpAddress,
+            privateIpAddress == null ? ImmutableMap.<String, List<String>>of() : ImmutableMap.copyOf(privateIpAddress),
+            vSwitchId, vpcId);
+   }
 
-   @Nullable
-   public abstract String value();
+   public abstract String natIpAddress();
+
+   public abstract Map<String, List<String>> privateIpAddress();
+
+   public abstract String vSwitchId();
+
+   public abstract String vpcId();
+
 }

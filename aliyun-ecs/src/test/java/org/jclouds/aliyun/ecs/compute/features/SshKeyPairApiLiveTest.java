@@ -23,7 +23,7 @@ import org.jclouds.aliyun.ecs.domain.KeyPair;
 import org.jclouds.aliyun.ecs.domain.KeyPairRequest;
 import org.jclouds.aliyun.ecs.domain.internal.Regions;
 import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.ssh.SshKeys;
+import org.jclouds.compute.ComputeTestUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -58,7 +58,7 @@ public class SshKeyPairApiLiveTest extends BaseECSComputeServiceApiLiveTest {
       String importedKeyPairName = keyPairName  + new Random().nextInt(1024);
       KeyPair imported = api().importKeyPair(
               Regions.EU_CENTRAL_1.getName(),
-              SshKeys.generate().get("public"),
+              ComputeTestUtils.setupKeyPair().get("public"), //SshKeys.generate().get("public"),
               importedKeyPairName);
       assertEquals(imported.name(), importedKeyPairName);
       assertNotNull(imported.privateKeyBody());

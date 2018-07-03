@@ -25,8 +25,10 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.io.BaseEncoding.base64;
 
 public class TagOptions extends BaseHttpRequestOptions {
 
@@ -90,6 +92,16 @@ public class TagOptions extends BaseHttpRequestOptions {
             return input.startsWith(input);
          }
       }), "Cannot starts with " + Iterables.toString(FORBIDDEN_PREFIX));
+   }
+
+   /**
+    * This is strictly not needed but apparently tags with `-` can create a problem when using API, so I've decided to use
+    * base64 encoding
+    * @param value
+    * @return
+    */
+   public String encodeTag(String value) {
+      return base64().encode(value.getBytes(UTF_8));
    }
 
 }

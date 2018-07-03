@@ -14,36 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.InstanceApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.aliyun.ecs.features.TagApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class EipAddress {
 
-public interface ECSComputeServiceApi extends Closeable {
+   EipAddress() {
+   }
 
-   @Delegate
-   ImageApi imageApi();
+   @SerializedNames({ "IpAddress", "AllocationId", "InternetChargeType" })
+   public static EipAddress create(String ipAddress, String allocationId, String internetChargeType) {
+      return new AutoValue_EipAddress(ipAddress, allocationId, internetChargeType);
+   }
 
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
+   public abstract String ipAddress();
 
-   @Delegate
-   SecurityGroupApi securityGroupApi();
+   public abstract String allocationId();
 
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
-
-   @Delegate
-   TagApi tagApi();
-
-   @Delegate
-   InstanceApi instanceApi();
+   public abstract String internetChargeType();
 
 }
