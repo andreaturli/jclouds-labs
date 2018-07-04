@@ -34,11 +34,10 @@ public enum Regions {
    CN_NORTH_2("cn-beijing", "China (Beijing)"),
    CN_NORTH_3("cn-zhangjiakou", "China (Zhangjiakou)"),
    CN_NORTH_5("cn-huhehaote", "China (Huhehaote)"),
-   CN_EAST_1("cn-hangzhou", "China (Zhangjiakou)"),
+   CN_EAST_1("cn-hangzhou", "China (Hangzou)"),
    CN_EAST_2("cn-shanghai", "China (Shanghai)"),
    CN_SOUTH_1("cn-shenzhen", "China (Shenzhen)"),
    CN_SOUTH_2("cn-hongkong", "China (Hongkong)"),
-   CN_NORTHWEST_1("cn-northwest-1", "India (Mumbai)"),
    ME_EAST_1("me-east-1", "UAE (Dubai)");
 
    private final String name;
