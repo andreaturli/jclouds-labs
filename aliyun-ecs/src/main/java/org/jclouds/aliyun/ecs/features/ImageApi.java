@@ -19,9 +19,9 @@ package org.jclouds.aliyun.ecs.features;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.inject.TypeLiteral;
+import org.jclouds.Constants;
 import org.jclouds.Fallbacks;
 import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
-import org.jclouds.aliyun.ecs.ECSServiceApiMetadata;
 import org.jclouds.aliyun.ecs.domain.Image;
 import org.jclouds.aliyun.ecs.domain.Images;
 import org.jclouds.aliyun.ecs.domain.options.ListImagesOptions;
@@ -52,7 +52,7 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequestFilters(FormSign.class)
 @QueryParams(keys = {"Version", "Format", "SignatureVersion", "ServiceCode", "SignatureMethod"},
-        values = { ECSServiceApiMetadata.DEFAULT_API_VERSION, "JSON", "1.0", "ecs", "HMAC-SHA1"})
+             values = {"{" + Constants.PROPERTY_API_VERSION + "}", "JSON", "1.0", "ecs", "HMAC-SHA1"})
 public interface ImageApi {
 
    @Named("image:list")
@@ -99,6 +99,6 @@ public interface ImageApi {
             };
          }
       }
-
    }
+
 }
