@@ -139,4 +139,3 @@ public interface SshKeyPairApi {
                   @ParamParser(ArrayToCommaSeparatedString.class) @QueryParam("KeyPairNames") String... keyPairNames);
 
 }
-

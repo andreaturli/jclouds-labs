@@ -16,27 +16,18 @@
  */
 package org.jclouds.aliyun.ecs.domain;
 
-import com.google.common.base.Enums;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
+import org.jclouds.aliyun.ecs.domain.internal.PaginatedCollection;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import java.beans.ConstructorProperties;
+import java.util.Map;
 
 /**
- * IP protocol. Not case sensitive. Optional values:
- * icmp
- * gre
- * tcp
- * udp
- * all: Support four protocols at the same time
+ * A collection of KeyPair
  */
-public enum IpProtocol {
-   ICMP, GRE, TCP, UDP, ALL;
+public class KeyPairs extends PaginatedCollection<KeyPair> {
 
-   public static IpProtocol fromValue(String value) {
-      Optional<IpProtocol> ipProtocol = Enums.getIfPresent(IpProtocol.class, value.toUpperCase());
-      checkArgument(ipProtocol.isPresent(), "Expected one of %s but was %s", Joiner.on(',').join(IpProtocol.values()), value);
-      return ipProtocol.get();
+   @ConstructorProperties({ "KeyPairs", "PageNumber", "TotalCount", "PageSize", "RegionId", "RequestId" })
+   public KeyPairs(Map<String, Iterable<KeyPair>> content, Integer pageNumber, Integer totalCount, Integer pageSize, String regionId, String requestId) {
+      super(content, pageNumber, totalCount, pageSize, regionId, requestId);
    }
-
 }

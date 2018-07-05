@@ -140,4 +140,3 @@ public interface TagApi {
                   @QueryParam("ResourceType") String resourceType,
                   TagOptions options);
 }
-
