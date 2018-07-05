@@ -14,19 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import org.jclouds.javax.annotation.Nullable;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class KeyPair {
 
-public interface ECSComputeServiceApi extends Closeable {
+   KeyPair() {
+   }
 
-   @Delegate
-   ImageApi imageApi();
+   @SerializedNames({ "KeyPairName", "KeyPairFingerPrint", "PrivateKeyBody" })
+   public static KeyPair create(String keyPairName, String keyPairFingerPrint, String privateKeyBody) {
+      return new AutoValue_KeyPair(keyPairName, keyPairFingerPrint, privateKeyBody);
+   }
 
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
+   public abstract String keyPairName();
+
+   public abstract String keyPairFingerPrint();
+
+   @Nullable
+   public abstract String privateKeyBody();
+
 }

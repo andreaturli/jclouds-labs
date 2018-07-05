@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.rest.annotations.Delegate;
+import org.jclouds.aliyun.ecs.domain.internal.PaginatedCollection;
 
-import java.io.Closeable;
+import java.beans.ConstructorProperties;
+import java.util.Map;
 
-public interface ECSComputeServiceApi extends Closeable {
+/**
+ * A collection of KeyPair
+ */
+public class KeyPairs extends PaginatedCollection<KeyPair> {
 
-   @Delegate
-   ImageApi imageApi();
-
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
+   @ConstructorProperties({ "KeyPairs", "PageNumber", "TotalCount", "PageSize", "RegionId", "RequestId" })
+   public KeyPairs(Map<String, Iterable<KeyPair>> content, Integer pageNumber, Integer totalCount, Integer pageSize, String regionId, String requestId) {
+      super(content, pageNumber, totalCount, pageSize, regionId, requestId);
+   }
 }
