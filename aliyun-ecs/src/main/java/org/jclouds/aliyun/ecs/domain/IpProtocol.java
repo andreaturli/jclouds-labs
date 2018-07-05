@@ -14,20 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.rest.annotations.Delegate;
+/**
+ * IP protocol. Not case sensitive. Optional values:
+ * icmp
+ * gre
+ * tcp
+ * udp
+ * all: Support four protocols at the same time
+ */
+public enum IpProtocol {
 
-import java.io.Closeable;
-
-public interface ECSComputeServiceApi extends Closeable {
-
-   @Delegate
-   ImageApi imageApi();
-
-   @Delegate
-   SecurityGroupApi securityGroupApi();
+   ICMP, GRE, TCP, UDP, ALL;
 
 }

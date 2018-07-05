@@ -14,20 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.rest.annotations.Delegate;
+import com.google.auto.value.AutoValue;
+import org.jclouds.json.SerializedNames;
 
-import java.io.Closeable;
+@AutoValue
+public abstract class SecurityGroup {
 
-public interface ECSComputeServiceApi extends Closeable {
+   SecurityGroup() {
+   }
 
-   @Delegate
-   ImageApi imageApi();
+   @SerializedNames({ "SecurityGroupId", "Description", "SecurityGroupName", "VpcId" })
+   public static SecurityGroup create(String securityGroupId, String description, String securityGroupName,
+                                      String vpcId) {
+      return new AutoValue_SecurityGroup(securityGroupId, description, securityGroupName, vpcId);
+   }
 
-   @Delegate
-   SecurityGroupApi securityGroupApi();
+   public abstract String securityGroupId();
+
+   public abstract String description();
+
+   public abstract String securityGroupName();
+
+   public abstract String vpcId();
 
 }
