@@ -14,32 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.aliyun.ecs;
+package org.jclouds.aliyun.ecs.domain;
 
-import org.jclouds.aliyun.ecs.features.ImageApi;
-import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
-import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
-import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
-import org.jclouds.aliyun.ecs.features.TagApi;
-import org.jclouds.rest.annotations.Delegate;
+import org.jclouds.aliyun.ecs.domain.internal.PaginatedCollection;
 
-import java.io.Closeable;
+import java.beans.ConstructorProperties;
+import java.util.Map;
 
-public interface ECSComputeServiceApi extends Closeable {
+/**
+ * A collection of SecurityGroup
+ */
+public class SecurityGroups extends PaginatedCollection<SecurityGroup> {
 
-   @Delegate
-   ImageApi imageApi();
-
-   @Delegate
-   RegionAndZoneApi regionAndZoneApi();
-
-   @Delegate
-   SecurityGroupApi securityGroupApi();
-
-   @Delegate
-   SshKeyPairApi sshKeyPairApi();
-
-   @Delegate
-   TagApi tagApi();
-
+   @ConstructorProperties({ "SecurityGroups", "PageNumber", "TotalCount", "PageSize", "RegionId", "RequestId" })
+   public SecurityGroups(Map<String, Iterable<SecurityGroup>> content, Integer pageNumber, Integer totalCount, Integer pageSize, String regionId, String requestId) {
+      super(content, pageNumber, totalCount, pageSize, regionId, requestId);
+   }
 }
