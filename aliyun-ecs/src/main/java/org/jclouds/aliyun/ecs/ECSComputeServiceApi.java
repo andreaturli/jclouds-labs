@@ -22,6 +22,8 @@ import org.jclouds.aliyun.ecs.features.RegionAndZoneApi;
 import org.jclouds.aliyun.ecs.features.SecurityGroupApi;
 import org.jclouds.aliyun.ecs.features.SshKeyPairApi;
 import org.jclouds.aliyun.ecs.features.TagApi;
+import org.jclouds.aliyun.ecs.features.VPCApi;
+import org.jclouds.aliyun.ecs.features.VSwitchApi;
 import org.jclouds.rest.annotations.Delegate;
 
 import java.io.Closeable;
@@ -46,4 +48,9 @@ public interface ECSComputeServiceApi extends Closeable {
    @Delegate
    InstanceApi instanceApi();
 
+   @Delegate
+   VPCApi vpcApi();
+
+   @Delegate
+   VSwitchApi vSwitchApi();
 }

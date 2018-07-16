@@ -32,13 +32,19 @@ import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
 import org.jclouds.aliyun.ecs.domain.IpProtocol;
 import org.jclouds.aliyun.ecs.domain.KeyPair;
 import org.jclouds.aliyun.ecs.domain.KeyPairRequest;
+import org.jclouds.aliyun.ecs.domain.Regions;
 import org.jclouds.aliyun.ecs.domain.SecurityGroup;
 import org.jclouds.aliyun.ecs.domain.SecurityGroupRequest;
+import org.jclouds.aliyun.ecs.domain.VPC;
+import org.jclouds.aliyun.ecs.domain.VPCRequest;
+import org.jclouds.aliyun.ecs.domain.VSwitchRequest;
 import org.jclouds.aliyun.ecs.domain.options.CreateSecurityGroupOptions;
+import org.jclouds.aliyun.ecs.domain.options.CreateVPCOptions;
 import org.jclouds.aliyun.ecs.domain.options.DeleteKeyPairOptions;
 import org.jclouds.aliyun.ecs.domain.options.ListKeyPairsOptions;
 import org.jclouds.aliyun.ecs.compute.options.ECSServiceTemplateOptions;
 import org.jclouds.aliyun.ecs.domain.options.TagOptions;
+import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.compute.config.CustomizationResponse;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -53,6 +59,7 @@ import org.jclouds.logging.Logger;
 import org.jclouds.ssh.SshKeyPairGenerator;
 import org.jclouds.ssh.SshKeys;
 
+import javax.annotation.Nullable;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -68,6 +75,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.get;
 import static com.google.common.collect.Iterables.size;
@@ -103,7 +111,7 @@ public class CreateResourcesThenCreateNodes extends CreateNodesWithGroupEncodedI
                                                  Set<NodeMetadata> goodNodes, Map<NodeMetadata, Exception> badNodes,
                                                  Multimap<NodeMetadata, CustomizationResponse> customizationResponses) {
 
-      String regionId = template.getLocation().getId();
+      final String regionId = template.getLocation().getId();
       ECSServiceTemplateOptions options = template.getOptions().as(ECSServiceTemplateOptions.class);
 
       // If keys haven't been configured, generate a key pair

@@ -16,9 +16,17 @@
  */
 package org.jclouds.aliyun.ecs.compute;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Module;
+import org.jclouds.aliyun.ecs.ECSComputeServiceApi;
+import org.jclouds.aliyun.ecs.compute.options.ECSServiceTemplateOptions;
+import org.jclouds.aliyun.ecs.domain.Regions;
+import org.jclouds.aliyun.ecs.domain.VPC;
+import org.jclouds.aliyun.ecs.domain.VPCRequest;
+import org.jclouds.aliyun.ecs.domain.VSwitchRequest;
+import org.jclouds.aliyun.ecs.domain.options.CreateVPCOptions;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -30,10 +38,14 @@ import org.jclouds.scriptbuilder.domain.Statements;
 import org.jclouds.scriptbuilder.statements.java.InstallJDK;
 import org.jclouds.scriptbuilder.statements.login.AdminAccess;
 import org.jclouds.sshj.config.SshjSshClientModule;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.testng.util.Strings;
 
+import javax.annotation.Nullable;
 import java.util.Properties;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.aliyun.ecs.compute.options.ECSServiceTemplateOptions.Builder.vpcId;
 
 /**
@@ -44,9 +56,16 @@ public class ECSComputeServiceLiveTest extends BaseComputeServiceLiveTest {
 
    private String vpcId;
    private String vSwitchId;
+   private ECSComputeServiceApi api;
 
    public ECSComputeServiceLiveTest() {
       provider = "aliyun-ecs";
+   }
+
+   @BeforeClass
+   @Override
+   public void setupContext() {
+      super.setupContext();
    }
 
    @Override
@@ -59,9 +78,7 @@ public class ECSComputeServiceLiveTest extends BaseComputeServiceLiveTest {
 
    @Override
    protected TemplateBuilder templateBuilder() {
-      return super.templateBuilder()
-                      .options(vpcId(vpcId)
-                      .vSwitchId(vSwitchId));
+      return super.templateBuilder().options(vpcId(vpcId).vSwitchId(vSwitchId));
    }
 
    @Override
